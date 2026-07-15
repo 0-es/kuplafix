@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KuplaFix local bookmarklet</title>
+  <style>
+    body { max-width: 42rem; margin: 3rem auto; padding: 0 1rem; font: 16px/1.55 system-ui, sans-serif; }
+    a { display: inline-block; padding: .75rem 1rem; background: #f5cc3d; color: #171717; border-radius: .5rem; font-weight: 700; text-decoration: none; }
+    code { background: #eee; padding: .15rem .3rem; }
+  </style>
+</head>
+<body>
+  <h1>KuplaFix local bookmarklet</h1>
+  <p>Vedä painike kirjanmerkkipalkkiin. Se lataa tämän paikallisen työkopion ilman GitHub-pushia.</p>
+  <a id="kuplafix-local-bookmarklet" href="javascript:(()=>{if(!/(^|\.)kuplahotelli\.com$/i.test(location.hostname)){alert('Avaa ensin Kuplahotelli ja peliclientti.');return;}if(window.__KUPLAFIX_LOADING__||window.__kuplafix_singleton__){alert('KuplaFix on jo käytössä tai latautumassa tällä sivulla.');return;}window.__KUPLAFIX_LOADING__=true;window.__KUPLAFIX_BOOKMARKLET_BOOT__=true;const s=document.createElement('script');const done=()=>{window.__KUPLAFIX_LOADING__=false;s.remove();};s.src='https://localhost:8443/kuplafix.user.js?dev='+Date.now();s.onload=done;s.onerror=()=>{window.__KUPLAFIX_LOADING__=false;window.__KUPLAFIX_BOOKMARKLET_BOOT__=undefined;s.remove();alert('Paikallisen KuplaFixin lataaminen epäonnistui. Onko dev-palvelin käynnissä?');};document.documentElement.appendChild(s);})();">KuplaFix LOCAL</a>
+  <h2>Käyttö</h2>
+  <ol>
+    <li>Aja ensin <code>dev/setup-local-https.ps1</code> kerran.</li>
+    <li>Aja <code>node dev/serve-local.mjs</code>.</li>
+    <li>Avaa tämä sivu osoitteessa <code>https://localhost:8443/dev/index.local.html</code> ja vedä painike kirjanmerkkipalkkiin.</li>
+  </ol>
+</body>
+</html>
