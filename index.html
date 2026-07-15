@@ -1,169 +1,800 @@
+
+
 <!doctype html>
 <html lang="fi">
 <head>
   <meta charset="utf-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
-
-  <title>KuplaFix</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d1215">
+  <title>kuplaFix · asennus</title>
+  <link rel="stylesheet" href="./kuplafix-menu.css">
   <style>
     :root {
       color-scheme: dark;
-      font-family:
-        Inter,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
+      --bg: #0d1215;
+      --panel: #1f292e;
+      --panel-dark: #141b1f;
+      --border: #364951;
+      --text: #f4f7f8;
+      --muted: #9fb1b9;
+      --primary: #176f8f;
+      --accent: #7cb1c8;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; background: var(--bg); color: var(--text); }
+    a { color: inherit; }
+    main { width: min(820px, calc(100% - 32px)); margin: 0 auto; padding: 52px 0 72px; }
+    .site-logo { margin: 0; overflow: visible; color: #fff; }
+    .site-logo span { display: block; margin: 0; color: #fff; font: 700 clamp(5px, .78vw, 8px)/1.12 "Courier New", Courier, monospace; letter-spacing: 0; white-space: pre; }
+    h2 { margin: 54px 0 20px; font-size: 1.55rem; }
+    h3 { margin: 0; }
+    code { padding: 3px 6px; border: 1px solid var(--border); border-radius: 5px; background: #11181b; color: #c4e5ef; }
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      background: #111318;
-      color: #f5f5f5;
-    }
-
-    main {
-      width: min(640px, 100%);
-      padding: 32px;
-      border: 1px solid #343842;
-      border-radius: 16px;
-      background: #1b1e25;
-      box-shadow: 0 20px 60px rgb(0 0 0 / 35%);
-    }
-
-    h1 {
-      margin-top: 0;
-      margin-bottom: 8px;
-      font-size: 2rem;
-    }
-
-    p,
-    li {
-      line-height: 1.6;
-    }
-
-    code {
-      padding: 3px 7px;
-      border-radius: 5px;
-      background: #292d36;
-    }
-
+    .install-options { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+    .install-option { padding: 0; border: 0; background: transparent; }
+    .install-option p { min-height: 48px; margin: 8px 0 18px; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+    .install-steps { margin: 10px 0 20px; padding-left: 22px; color: var(--muted); font-size: .9rem; line-height: 1.55; }
+    .install-steps li { margin: 7px 0; padding-left: 4px; }
+    .install-steps strong { color: var(--text); }
+    .button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0 16px; border: 1px solid var(--border); border-radius: 7px; background: var(--panel); color: white; font-weight: 750; text-decoration: none; }
+    .button:hover { border-color: var(--accent); }
+    .button-primary { border-color: var(--primary); background: var(--primary); }
     .bookmarklet {
-      display: block;
-      width: fit-content;
-      margin: 24px auto;
-      padding: 15px 26px;
-      border: 2px solid #ffe476;
-      border-radius: 10px;
-      background: #f5cc3d;
-      color: #171717;
-      font-size: 1.2rem;
-      font-weight: 800;
-      text-decoration: none;
+      position: relative;
+      isolation: isolate;
+      min-width: 154px;
+      overflow: hidden;
+      border-color: rgba(180, 240, 255, .9);
+      background:
+        radial-gradient(circle at 18% 20%, rgba(255,255,255,.82), transparent 16%),
+        linear-gradient(120deg, #0f6e91, #36d3ca 28%, #7257d9 55%, #ec4c9a 77%, #1687a8);
+      background-size: 100% 100%, 260% 260%;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.22) inset, 0 0 22px rgba(52,210,205,.45), 0 12px 34px rgba(0,0,0,.55);
       cursor: grab;
       user-select: none;
-      box-shadow: 0 7px 0 #997b16;
-      transition:
-        transform 120ms ease,
-        box-shadow 120ms ease;
+      transform: translateZ(0);
+      animation: bookmark-holo 4.5s ease-in-out infinite;
     }
-
-    .bookmarklet:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 9px 0 #997b16;
+    .bookmarklet::before,
+    .moving-bookmark::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      left: 50%;
+      top: 50%;
+      width: 340%;
+      aspect-ratio: 1;
+      background: conic-gradient(from 90deg, transparent, rgba(255,255,255,.8), transparent 18%, rgba(97,255,224,.75), transparent 38%, rgba(255,91,203,.75), transparent 62%);
+      mix-blend-mode: color-dodge;
+      animation: holo-spin 5s linear infinite;
     }
-
-    .bookmarklet:active {
-      cursor: grabbing;
-      transform: translateY(4px);
-      box-shadow: 0 3px 0 #997b16;
+    .bookmarklet::after,
+    .moving-bookmark::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,.8) 43%, transparent 58%);
+      transform: translateX(-140%);
+      animation: holo-sweep 2.8s ease-in-out infinite;
     }
+    .bookmarklet:hover { border-color: white; transform: translateY(-3px) scale(1.06) rotate(-1deg); filter: saturate(1.25); }
+    .bookmarklet:active { cursor: grabbing; }
+    .install-note { margin: 12px 0 0; color: #82969f; font-size: .78rem; }
 
-    .notice {
-      padding: 12px 14px;
-      border-left: 4px solid #f5cc3d;
-      background: #252932;
-      color: #d9dce3;
+    .browser {
+      position: relative;
+      height: 350px;
+      margin-top: 18px;
+      overflow: hidden;
+      border: 1px solid #4a5358;
+      border-radius: 11px;
+      background: #fff;
+      box-shadow: 0 16px 42px rgba(0, 0, 0, .3);
+    }
+    .tab-strip { height: 40px; display: flex; align-items: end; padding: 0 10px; background: #202124; }
+    .browser-tab { width: 190px; height: 31px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-radius: 8px 8px 0 0; background: #35363a; color: #e8eaed; font-size: .72rem; }
+    .window-controls { margin-left: auto; align-self: center; color: #bdc1c6; font-size: .72rem; letter-spacing: 13px; }
+    .toolbar { height: 46px; display: flex; align-items: center; gap: 11px; padding: 0 12px; background: #35363a; color: #bdc1c6; }
+    .nav-icons { font-size: 1rem; letter-spacing: 8px; white-space: nowrap; }
+    .address { flex: 1; height: 30px; display: flex; align-items: center; padding: 0 13px; border-radius: 16px; background: #202124; color: #bdc1c6; font-size: .72rem; }
+    .menu-dots { font-size: 1.2rem; }
+    .bookmarks { height: 34px; display: flex; align-items: center; gap: 5px; padding: 0 14px; border-top: 1px solid #4b4c50; background: #35363a; color: #e8eaed; }
+    .browser-bookmark { height: 25px; display: inline-flex; align-items: center; padding: 0 9px; border-radius: 4px; font-size: .68rem; }
+    .browser-bookmark.target { min-width: 82px; border: 1px dashed #84929a; color: #aeb9be; }
+    .fake-page { height: 230px; display: grid; place-items: center; background: #f4f6f7; color: #3c4549; text-align: center; }
+    .fake-page strong { display: block; margin-bottom: 7px; font-size: 1.1rem; }
+    .fake-page span { font-size: .76rem; color: #68777e; }
+    .moving-bookmark {
+      position: absolute;
+      z-index: 4;
+      isolation: isolate;
+      left: 50%;
+      top: 246px;
+      width: 116px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border: 1px solid rgba(180, 240, 255, .9);
+      border-radius: 7px;
+      background:
+        radial-gradient(circle at 18% 20%, rgba(255,255,255,.82), transparent 16%),
+        linear-gradient(120deg, #0f6e91, #36d3ca 28%, #7257d9 55%, #ec4c9a 77%, #1687a8);
+      background-size: 100% 100%, 260% 260%;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.22) inset, 0 0 22px rgba(52,210,205,.45), 0 12px 34px rgba(0,0,0,.55);
+      color: #fff;
+      font-size: .76rem;
+      font-weight: 850;
+      transform: translateX(-50%);
+      animation: bookmark-drag 4.2s cubic-bezier(.64, 0, .36, 1) infinite, bookmark-holo 4.5s ease-in-out infinite;
+    }
+    .mouse-pointer { position: absolute; z-index: 5; left: calc(50% + 33px); top: 270px; width: 17px; height: 23px; filter: drop-shadow(1px 1px 1px #000); animation: pointer-drag 4.2s cubic-bezier(.64, 0, .36, 1) infinite; }
+    .mouse-pointer::before { content: ""; position: absolute; border-top: 18px solid #111; border-right: 11px solid transparent; transform: rotate(-17deg); }
+    .mouse-pointer::after { content: ""; position: absolute; left: 2px; top: 2px; border-top: 14px solid white; border-right: 8px solid transparent; transform: rotate(-17deg); }
+
+    @keyframes bookmark-drag {
+      0%, 14% { left: 50%; top: 246px; transform: translateX(-50%) scale(1); opacity: 1; }
+      21% { transform: translateX(-50%) scale(.96); }
+      58%, 80% { left: 28%; top: 91px; transform: translateX(-50%) scale(.72); opacity: 1; }
+      86% { left: 28%; top: 91px; transform: translateX(-50%) scale(.72); opacity: 0; }
+      87%, 100% { left: 50%; top: 246px; transform: translateX(-50%) scale(1); opacity: 0; }
+    }
+    @keyframes pointer-drag {
+      0%, 10% { left: calc(50% + 33px); top: 270px; opacity: 0; }
+      17% { opacity: 1; }
+      58%, 80% { left: calc(28% + 29px); top: 108px; opacity: 1; }
+      86%, 100% { left: calc(28% + 29px); top: 108px; opacity: 0; }
+    }
+    @keyframes bookmark-holo { 0%,100% { background-position:0 0,0% 50%; } 50% { background-position:0 0,100% 50%; box-shadow:0 0 0 1px rgba(255,255,255,.3) inset,0 0 34px rgba(111,226,255,.68),0 15px 38px rgba(0,0,0,.62); } }
+    @keyframes holo-spin {
+      from { transform:translate(-50%,-50%) rotate(0deg); }
+      to { transform:translate(-50%,-50%) rotate(360deg); }
+    }
+    @keyframes holo-sweep { 0%,25% { transform:translateX(-140%); } 60%,100% { transform:translateX(140%); } }
+
+    .feature-rail { position:fixed; z-index:0; left:max(18px,calc(45vw - 640px)); top:0; bottom:0; width:210px; overflow:hidden; opacity:.14; pointer-events:none; mask-image:linear-gradient(transparent 0,#000 12%,#000 88%,transparent 100%); }
+    .feature-rail-track { display:flex; flex-direction:column; animation:feature-scroll 46s linear infinite; will-change:transform; }
+    .feature-rail-list { display:flex; flex:none; flex-direction:column; gap:18px; margin:0; padding:30px 0; list-style:none; color:#b9dce8; font-size:.82rem; font-weight:750; letter-spacing:.025em; line-height:1.3; text-transform:lowercase; }
+    @keyframes feature-scroll { to { transform:translateY(-50%); } }
+
+    .menu-preview { position:relative; display:flex; justify-content:center; align-items:flex-start; overflow:visible; }
+    .menu-preview .kuplafix-menu { position:relative !important; inset:auto !important; top:auto !important; left:auto !important; transform:none !important; margin:0 !important; max-height:720px !important; width:min(440px,100%) !important; }
+    .menu-preview .kuplafix-menu-header, .menu-preview .kuplafix-drag-handle { cursor:default !important; }
+    .changes { margin: 0; padding-left: 20px; color: var(--muted); }
+    .changes li { margin: 8px 0; line-height: 1.5; }
+    footer { padding: 25px 0; border-top: 1px solid #223138; color: #778b94; font-size: .78rem; text-align: center; }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .bookmarklet, .bookmarklet::before, .bookmarklet::after, .moving-bookmark::before, .moving-bookmark::after, .feature-rail-track { animation:none; }
+      .moving-bookmark { animation: none; left: 28%; top: 91px; transform: translateX(-50%) scale(.72); }
+      .mouse-pointer { display: none; }
+    }
+    @media (max-width: 1280px) { .feature-rail { display:none; } }
+    @media (max-width: 660px) {
+      main { padding-top: 36px; }
+      .install-options { grid-template-columns: 1fr; }
+      .browser { height: 310px; }
+      .fake-page { height: 190px; }
+      .moving-bookmark { top: 220px; }
+      .window-controls { display: none; }
+      @keyframes bookmark-drag {
+        0%, 14% { left: 50%; top: 220px; transform: translateX(-50%) scale(1); opacity: 1; }
+        21% { transform: translateX(-50%) scale(.96); }
+        58%, 80% { left: 35%; top: 91px; transform: translateX(-50%) scale(.72); opacity: 1; }
+        86% { left: 35%; top: 91px; transform: translateX(-50%) scale(.72); opacity: 0; }
+        87%, 100% { left: 50%; top: 220px; transform: translateX(-50%) scale(1); opacity: 0; }
+      }
     }
   </style>
 </head>
-
 <body>
+  <aside class="feature-rail" aria-hidden="true">
+    <div class="feature-rail-track">
+      <ul class="feature-rail-list">
+        <li>viestihistoria joka ei katoa</li><li>palaa vanhoihin viesteihin</li><li>chat-historia suodattimet</li><li>kävijämäärä aina näkyvissä</li><li>ilmoitukset omilla ehdoillasi</li><li>tärkeät ilmoitukset pysyvät näkyvissä</li><li>clientin kirkkauden säädin</li><li>yövalo overlay huoneisiin</li><li>hahmon ohjaus WASD-näppäimillä</li><li>ääniviestit</li><li>puhekanavat clientin sisällä</li><li>näytönjako ilman erillistä sovellusta</li><li>selaa etusivua poistumatta clientistä</li><li>vie chat ponnahdusikkunaan</li><li>tilastot suoraan clientissä</li><li>automaattinen lotto</li><li>vähemmän lagia clientissä</li><li>clientin lukitut asetukset muokattaviksi</li><li>luo ja jaa makroja</li><li>toistuvat toiminnot automaattisiksi</li><li>rajattomasti omia automaatioita</li><li>kaikki ominaisuudet säädettävissä</li><li>omat asetukset</li><li>enemmän Kuplaa suoraan clientissä</li>
+      </ul>
+    </div>
+  </aside>
   <main>
-    <h1>KuplaFix</h1>
+    <h1 class="site-logo" aria-label="kuplaFix"><span aria-hidden="true">                                                 .---.
+     .                   _________   _...._      |   |                   .--.
+   .'|                   \        |.'      '-.   |   |              _.._ |__|
+ .'  |                    \        .'```'.    '. |   |            .' .._|.--.
+&lt;    |                     \      |       \     \|   |    __      | '    |  | ____     _____
+ |   | ____      _    _     |     |        |    ||   | .:--.'.  __| |__  |  |`.   \  .'    /
+ |   | \ .'     | '  / |    |      \      /    . |   |/ |   \ ||__   __| |  |  `.  `'    .'
+ |   |/  .     .' | .' |    |     |\`'-.-'   .'  |   |`" __ | |   | |    |  |    '.    .'
+ |    /\  \    /  | /  |    |     | '-....-'`    |   | .'.''| |   | |    |__|    .'     `.
+ |   |  \  \  |   `'.  |   .'     '.             '---'/ /   | |_  | |          .'  .'`.   `.
+ '    \  \  \ '   .'|  '/'-----------'                \ \._,\ '/  | |        .'   /    `.   `.
+'------'  '---'`-'  `--'                               `--'  `"   |_|       '----'       '----'</span></h1>
+    <section id="asennus">
+      <h2>Asennus</h2>
+      <div class="install-options">
+        <article class="install-option">
+          <h3>Bookmarklet</h3>
+          <ol class="install-steps">
+            <li><strong>Lisää kirjanmerkki.</strong> Vedä alla oleva kuplaFix-painike selaimen kirjanmerkkipalkkiin.</li>
+            <li><strong>Siirry clienttiin.</strong> Avaa Kuplahotelli ja lataa client.</li>
+            <li><strong>Lataa kuplaFix.</strong> Paina tallentamaasi kuplaFix-kirjanmerkkiä.</li>
+          </ol>
+          <a id="kuplafix-bookmarklet" class="button button-primary bookmarklet" href="javascript:(()=>{if(!/(^|\.)kuplahotelli\.com$/i.test(location.hostname)){alert('Avaa ensin Kuplahotelli ja peliclientti.');return;}if(window.__KUPLAFIX_LOADING__||window.__kuplafix_singleton__){alert('kuplaFix on jo käytössä tai latautumassa tällä sivulla.');return;}window.__KUPLAFIX_LOADING__=true;window.__KUPLAFIX_BOOKMARKLET_BOOT__=true;const s=document.createElement('script');const done=()=>{window.__KUPLAFIX_LOADING__=false;s.remove();};s.src='https://0-es.github.io/kuplafix/kuplafix.user.js';s.onload=done;s.onerror=()=>{window.__KUPLAFIX_LOADING__=false;window.__KUPLAFIX_BOOKMARKLET_BOOT__=undefined;s.remove();alert('kuplaFixin lataaminen epäonnistui. Tarkista verkkoyhteys ja yritä uudelleen.');};document.documentElement.appendChild(s);})();">kuplaFix</a>
+          <div class="install-note">Kirjanmerkkipalkki näkyviin: <code>Ctrl + Shift + B</code></div>
+        </article>
+        <article class="install-option">
+          <h3>Userscript</h3>
+          <p>Asenna ScriptCatiin tai muuhun userscript-hallintaan. Käynnistyy automaattisesti ja päivittyy automaattisesti.</p>
+          <a class="button" href="https://raw.githubusercontent.com/0-es/kuplafix/main/kuplafix.user.js">kuplafix.user.js ↗</a>
+        </article>
+      </div>
 
-    <p>
-      Näytä kirjanmerkkipalkki painamalla
-      <code>Ctrl + Shift + B</code>.
-    </p>
+      <div class="browser" aria-label="Animaatio bookmarkletin vetämisestä selaimen kirjanmerkkipalkkiin">
+        <div class="tab-strip"><div class="browser-tab">kuplaFix · asennus</div><div class="window-controls">— □ ×</div></div>
+        <div class="toolbar"><div class="nav-icons">← → ↻</div><div class="address">🔒 0-es.github.io/kuplafix/</div><div class="menu-dots">⋮</div></div>
+        <div class="bookmarks"><div class="browser-bookmark">Sovellukset</div><div class="browser-bookmark target">kuplaFix</div></div>
+        <div class="fake-page"><div><strong>Vedä kuplaFix-painike kirjanmerkkipalkkiin</strong><span>Pidä hiiren painike pohjassa ja vedä painike kirjanmerkkeihin.</span></div></div>
+        <div class="moving-bookmark">kuplaFix</div><div class="mouse-pointer" aria-hidden="true"></div>
+      </div>
+    </section>
 
-    <p>
-      Vedä alla oleva KuplaFix-painike kirjanmerkkipalkkiin.
-      Älä klikkaa painiketta tällä sivulla.
-    </p>
+    <section id="ominaisuudet">
+      <h2>kuplaFix demo</h2>
+      <div class="menu-preview">
 
-    <a
-      id="kuplafix-bookmarklet"
-      class="bookmarklet"
-      href="javascript:(()=>{if(!/(^|\.)kuplahotelli\.com$/i.test(location.hostname)){alert('Avaa ensin Kuplahotelli ja peliclientti.');return;}if(window.__KUPLAFIX_LOADING__||window.__kuplafix_singleton__){alert('KuplaFix on jo käytössä tai latautumassa tällä sivulla.');return;}window.__KUPLAFIX_LOADING__=true;window.__KUPLAFIX_BOOKMARKLET_BOOT__=true;const s=document.createElement('script');const done=()=>{window.__KUPLAFIX_LOADING__=false;s.remove();};s.src='https://0-es.github.io/kuplafix/kuplafix.user.js?v=2.1.5';s.onload=done;s.onerror=()=>{window.__KUPLAFIX_LOADING__=false;window.__KUPLAFIX_BOOKMARKLET_BOOT__=undefined;s.remove();alert('KuplaFixin lataaminen epäonnistui. Tarkista verkkoyhteys ja yritä uudelleen.');};document.documentElement.appendChild(s);})();"
-    >
-      KuplaFix
-    </a>
+<div class="kuplafix-menu" id="kuplafix-menu" style="transform: translate(0px, 0px); inset: 61px auto auto 151px;">
+        <div class="kuplafix-menu-header" data-kuplafix-drag-handle="" style="cursor: move;">
+          <pre class="kuplafix-menu-ascii">
+                                                 .---.
+     .                   _________   _...._      |   |                   .--.
+   .'|                   \        |.'      '-.   |   |              _.._ |__|
+ .'  |                    \        .'```'.    '. |   |            .' .._|.--.
+&lt;    |                     \      |       \     \|   |    __      | '    |  | ____     _____
+ |   | ____      _    _     |     |        |    ||   | .:--.'.  __| |__  |  |`.   \  .'    /
+ |   | \ .'     | '  / |    |      \      /    . |   |/ |   \ ||__   __| |  |  `.  `'    .'
+ |   |/  .     .' | .' |    |     |\`'-.-'   .'  |   |`" __ | |   | |    |  |    '.    .'
+ |    /\  \    /  | /  |    |     | '-....-'`    |   | .'.''| |   | |    |__|    .'     `.
+ |   |  \  \  |   `'.  |   .'     '.             '---'/ /   | |_  | |          .'  .'`.   `.
+ '    \  \  \ '   .'|  '/'-----------'                \ \._,\ '/  | |        .'   /    `.   `.
+'------'  '---'`-'  `--'                               `--'  `"   |_|       '----'       '----'
+  </pre>
+          <button class="kuplafix-close-btn" id="kuplafix-close-btn" aria-label="Sulje asetukset">✕</button>
+        </div>
+        <div class="kuplafix-menu-subtitle">kuplaFix 2.1.6 - uusin</div>
 
-    <h2>ScriptCat / userscript</h2>
+        <div class="kuplafix-features-list">
 
-    <p>
-      Käytä automaattisesti päivittyvää userscript-versiota ScriptCatissa tai
-      muussa userscript-hallinnassa:
-      <a href="https://raw.githubusercontent.com/0-es/kuplafix/main/kuplafix.user.js" target="_blank" rel="noopener">asenna uusin KuplaFix.user.js</a>.
-    </p>
+        <div class="kuplafix-feature-card collapsed" data-feature="online-count">
+          <div class="kuplafix-feature-header">
+            <div class="kuplafix-drag-handle" title="Raahaa muuttaaksesi järjestystä">⋮⋮</div>
+            <div class="kuplafix-feature-title-row">
+              <div class="kuplafix-feature-title">kävijämäärä chatboxissa</div>
+            </div>
+            <div class="kuplafix-header-controls">
 
-    <h2>Käyttö</h2>
 
-    <ol>
-      <li>Avaa Kuplahotelli ja kirjaudu sisään.</li>
-      <li>Avaa peliclientti.</li>
-      <li>Paina kirjanmerkkipalkin <strong>KuplaFix</strong>-painiketta.</li>
-    </ol>
+              <label class="kuplafix-toggle" title="Ota ominaisuus käyttöön tai pois">
+                <input type="checkbox" id="kf-online-count" checked="">
+                <span class="kuplafix-toggle-slider"></span>
+              </label>
 
-    <h2>Uusimmat muutokset · v2.1.5</h2>
+              <button class="kuplafix-minimize-btn" title="Laajenna">▼</button>
+            </div>
+          </div>
+          <div class="kuplafix-feature-content">
+            <div class="kuplafix-feature-description">Näytä monta hahmoa on paikalla chatboxissa ja päivitä lukema automaattisesti.</div>
+            <div class="kuplafix-feature-actions-row"><button class="kuplafix-btn-secondary" id="kuplafix-options-online-count" title="Muuta päivitysväliä">Asetukset</button></div>
+            <div class="kuplafix-feature-body">
 
-    <ul>
-      <li>Korjattu Nitro-clientin turvallinen uudelleenkäynnistys: virhe ei enää jätä peliä tyhjään iframeen.</li>
-      <li>Viestihistoria voidaan avata erilliseen chat-ikkunaan samalla ulkoasulla ja samoilla suodatusasetuksilla.</li>
-      <li>Vanhat userscript-versiot näyttävät valikossa suoran linkin uusimpaan raw <code>.user.js</code> -tiedostoon ScriptCat-asennusta varten.</li>
-    </ul>
+            <div class="kuplafix-feature-options-panel" id="kuplafix-panel-online-count">
+              <form class="kuplafix-options-form" id="kuplafix-form-online-count">
+                <label for="kuplafix-interval-input" class="kuplafix-options-label">Päivitysväli (sekunteina)</label>
+                <div class="kuplafix-options-row">
+                  <input type="number" min="5" id="kuplafix-interval-input" class="kuplafix-options-input" value="60">
+                </div>
+              </form>
+            </div>
+            <div class="kuplafix-feature-status-row">
+              <div class="kuplafix-feature-status" data-role="interval-label">Päivitysväli: 60 s</div>
+            </div>
 
-    <p class="notice">
-      KuplaFix täytyy käynnistää uudelleen Kuplahotellin täyden sivupäivityksen
-      jälkeen. Kun bookmarkletin lataaja muuttuu, poista vanha kirjanmerkki ja
-      vedä tämä painike uudelleen kirjanmerkkipalkkiin.
-    </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="kuplafix-feature-card collapsed" data-feature="gif-blocker">
+          <div class="kuplafix-feature-header">
+            <div class="kuplafix-drag-handle" title="Raahaa muuttaaksesi järjestystä">⋮⋮</div>
+            <div class="kuplafix-feature-title-row">
+              <div class="kuplafix-feature-title">piilota gifit</div>
+            </div>
+            <div class="kuplafix-header-controls">
+
+
+              <label class="kuplafix-toggle" title="Ota ominaisuus käyttöön tai pois">
+                <input type="checkbox" id="kf-gif-blocker" checked="">
+                <span class="kuplafix-toggle-slider"></span>
+              </label>
+
+              <button class="kuplafix-minimize-btn" title="Laajenna">▼</button>
+            </div>
+          </div>
+          <div class="kuplafix-feature-content">
+            <div class="kuplafix-feature-description">salli valituilta käyttäjiltä, näytä spoiler tai estä viestit kokonaan.</div>
+            <div class="kuplafix-feature-actions-row"><button class="kuplafix-btn-secondary" id="kuplafix-options-gif-blocker" title="Hallitse estoja">Hallitse</button></div>
+            <div class="kuplafix-feature-body">
+
+            <div class="kuplafix-feature-options-panel" id="kuplafix-panel-gif-blocker">
+              <form class="kuplafix-options-form" id="kuplafix-form-gif-blocker">
+                <div style="margin-bottom: 8px;">
+                  <label class="kuplafix-options-label">Estotapa:</label>
+                  <select id="kuplafix-gif-mode" class="kuplafix-select">
+                    <option value="spoiler">Spoiler (näytä klikkaamalla)</option>
+                    <option value="block">Poista koko viesti</option>
+                  </select>
+                </div>
+                <!-- ...existing code... -->
+              </form>
+            </div>
+            <!-- ...existing code... -->
+
+            </div>
+          </div>
+        </div>
+
+        <div class="kuplafix-feature-card collapsed" data-feature="bubble-alerts">
+          <div class="kuplafix-feature-header">
+            <div class="kuplafix-drag-handle" title="Raahaa muuttaaksesi järjestystä">⋮⋮</div>
+            <div class="kuplafix-feature-title-row">
+              <div class="kuplafix-feature-title">säilytä ilmoitukset</div>
+            </div>
+            <div class="kuplafix-header-controls">
+
+
+              <label class="kuplafix-toggle" title="Ota ominaisuus käyttöön tai pois">
+                <input type="checkbox" id="kf-bubble-alerts" checked="">
+                <span class="kuplafix-toggle-slider"></span>
+              </label>
+
+              <button class="kuplafix-minimize-btn" title="Laajenna">▼</button>
+            </div>
+          </div>
+          <div class="kuplafix-feature-content">
+            <div class="kuplafix-feature-description">valitse mitkä ilmoitukset pysyvät näkyvillä ja mitkä katoavat normaalisti (8s).</div>
+            <div class="kuplafix-feature-actions-row"><button class="kuplafix-btn-secondary" id="kuplafix-options-bubble-alerts" title="Muuta ilmoitusasetuksia">Asetukset</button></div>
+            <div class="kuplafix-feature-body">
+
+            <div class="kuplafix-feature-options-panel" id="kuplafix-panel-bubble-alerts">
+              <form class="kuplafix-options-form" id="kuplafix-form-bubble-alerts">
+                <label class="kuplafix-options-label">
+                  <input type="checkbox" id="kuplafix-alert-timestamp" checked="">
+                  Näytä ilmoituksissa aikaleima
+                </label>
+
+                <label class="kuplafix-options-label" style="margin-top: 12px;">Valitse säilytettävät ilmoitustyypit:</label>
+                <div id="kuplafix-alert-types" style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px;">
+
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
+                      <input type="checkbox" class="kuplafix-alert-type-checkbox" data-type="friendonline" checked="">
+                      <span>Kaveri online</span>
+                    </label>
+
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
+                      <input type="checkbox" class="kuplafix-alert-type-checkbox" data-type="friendoffline">
+                      <span>Kaveri offline</span>
+                    </label>
+
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
+                      <input type="checkbox" class="kuplafix-alert-type-checkbox" data-type="respect">
+                      <span>Respektit</span>
+                    </label>
+
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
+                      <input type="checkbox" class="kuplafix-alert-type-checkbox" data-type="achievement">
+                      <span>Saavutukset</span>
+                    </label>
+
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
+                      <input type="checkbox" class="kuplafix-alert-type-checkbox" data-type="gift" checked="">
+                      <span>Lahjat</span>
+                    </label>
+
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
+                      <input type="checkbox" class="kuplafix-alert-type-checkbox" data-type="currencies">
+                      <span>Valuutat</span>
+                    </label>
+
+                </div>
+              </form>
+            </div>
+            <div class="kuplafix-feature-status-row">
+              <div class="kuplafix-feature-status" data-role="alert-status" style="white-space: pre-line;">
+                Näytä aikaleima: ✓
+Pysyvät: Online, Merkit, Lahjat
+              </div>
+            </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="kuplafix-feature-card collapsed" data-feature="chat-history">
+          <div class="kuplafix-feature-header">
+            <div class="kuplafix-drag-handle" title="Raahaa muuttaaksesi järjestystä">⋮⋮</div>
+            <div class="kuplafix-feature-title-row">
+              <div class="kuplafix-feature-title">parempi chat historia</div>
+            </div>
+            <div class="kuplafix-header-controls">
+
+
+              <label class="kuplafix-toggle" title="Ota ominaisuus käyttöön tai pois">
+                <input type="checkbox" id="kf-chat-history" checked="">
+                <span class="kuplafix-toggle-slider"></span>
+              </label>
+
+              <button class="kuplafix-minimize-btn" title="Laajenna">▼</button>
+            </div>
+          </div>
+          <div class="kuplafix-feature-content">
+            <div class="kuplafix-feature-description">tallenna chattiviestit välimuistiin ja paranna chat-ikkunan käytettävyyttä.</div>
+            <div class="kuplafix-feature-actions-row"><button class="kuplafix-btn-secondary" id="kuplafix-options-chat-history" title="Muuta välimuistin asetuksia">Asetukset</button></div>
+            <div class="kuplafix-feature-body">
+
+            <div class="kuplafix-feature-options-panel" id="kuplafix-panel-chat-history">
+              <form class="kuplafix-options-form" id="kuplafix-form-chat-history">
+                <label for="kuplafix-chat-size-input" class="kuplafix-options-label">Välimuistin koko (viestejä)</label>
+                <div class="kuplafix-options-row">
+                  <input type="number" min="100" max="5000" id="kuplafix-chat-size-input" class="kuplafix-options-input" value="1000">
+                </div>
+
+                <label for="kuplafix-chat-expiry-input" class="kuplafix-options-label" style="margin-top: 8px;">Vanhenemisaika (päivää)</label>
+                <div class="kuplafix-options-row">
+                  <input type="number" min="1" max="30" id="kuplafix-chat-expiry-input" class="kuplafix-options-input" value="7">
+                </div>
+
+                <div class="kuplafix-options-buttons" style="margin-top: 12px;">
+                  <button type="button" class="kuplafix-btn" id="kuplafix-clear-chat-btn" style="background: #c0392b;">Tyhjennä välimuisti</button>
+                </div>
+              </form>
+            </div>
+            <div class="kuplafix-feature-status-row">
+              <div class="kuplafix-feature-status" data-role="chat-status">
+                Viestejä: max 1000<br>
+                Vanhentuu: 7 päivässä
+              </div>
+            </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="kuplafix-feature-card collapsed" data-feature="game-mode">
+          <div class="kuplafix-feature-header">
+            <div class="kuplafix-drag-handle" title="Raahaa muuttaaksesi järjestystä">⋮⋮</div>
+            <div class="kuplafix-feature-title-row">
+              <div class="kuplafix-feature-title">game mode</div>
+            </div>
+            <div class="kuplafix-header-controls">
+
+
+              <label class="kuplafix-toggle" title="Ota ominaisuus käyttöön tai pois">
+                <input type="checkbox" id="kf-game-mode">
+                <span class="kuplafix-toggle-slider"></span>
+              </label>
+
+              <button class="kuplafix-minimize-btn" title="Laajenna">▼</button>
+            </div>
+          </div>
+          <div class="kuplafix-feature-content">
+            <div class="kuplafix-feature-description">ohjaa hahmoa WASD-näppäimillä ja lähetä muut kirjaimet tai numerot heti yhden merkin viesteinä.</div>
+            <div class="kuplafix-feature-actions-row"><button class="kuplafix-btn-secondary" id="kuplafix-options-game-mode" title="Muuta Game mode -asetuksia">Asetukset</button></div>
+            <div class="kuplafix-feature-body">
+
+            <div class="kuplafix-feature-options-panel" id="kuplafix-panel-game-mode">
+              <form class="kuplafix-options-form" id="kuplafix-form-game-mode">
+                <label for="kuplafix-game-mode-wasd" class="kuplafix-options-label">WASD-toiminto</label>
+                <div class="kuplafix-options-row">
+                  <select id="kuplafix-game-mode-wasd" class="kuplafix-options-input">
+                    <option value="movement">Liikkuminen</option>
+                    <option value="chat" selected="">Pikaviestit</option>
+                  </select>
+                </div>
+                <label for="kuplafix-game-mode-key" class="kuplafix-options-label" style="margin-top:8px;">Game moden väliaikainen pikanäppäin</label>
+                <div class="kuplafix-options-row">
+                  <input type="text" id="kuplafix-game-mode-key" class="kuplafix-options-input" readonly="" value="" placeholder="Paina näppäintä" data-bound-key=".">
+                </div>
+                <div style="font-size:10px; color:#9fb6c1; margin-top:4px;">Aktivoi kenttä ja paina haluamaasi näppäintä. Backspace poistaa sidonnan.</div>
+              </form>
+            </div>
+            <div class="kuplafix-feature-status-row">
+              <div class="kuplafix-feature-status" data-role="game-mode-status">
+                WASD: pikaviestit · Pikanäppäin: .
+              </div>
+            </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="kuplafix-feature-card collapsed" data-feature="room-lighting">
+          <div class="kuplafix-feature-header">
+            <div class="kuplafix-drag-handle" title="Raahaa muuttaaksesi järjestystä">⋮⋮</div>
+            <div class="kuplafix-feature-title-row">
+              <div class="kuplafix-feature-title">huoneen kirkkaus ja yövalo</div>
+            </div>
+            <div class="kuplafix-header-controls">
+
+
+              <label class="kuplafix-toggle" title="Ota ominaisuus käyttöön tai pois">
+                <input type="checkbox" id="kf-room-lighting" checked="">
+                <span class="kuplafix-toggle-slider"></span>
+              </label>
+
+              <button class="kuplafix-minimize-btn" title="Laajenna">▼</button>
+            </div>
+          </div>
+          <div class="kuplafix-feature-content">
+            <div class="kuplafix-feature-description">säädä kirkkautta ja lisää lämmin päivänvalo -yövalo (sinivalon vähennys).</div>
+            <div class="kuplafix-feature-actions-row"><button class="kuplafix-btn-secondary" id="kuplafix-options-room-lighting" title="Kirkkaus ja värilämpötila">Asetukset</button></div>
+            <div class="kuplafix-feature-body">
+
+            <div class="kuplafix-feature-options-panel" id="kuplafix-panel-room-lighting">
+              <form class="kuplafix-options-form" id="kuplafix-form-room-lighting">
+                <label class="kuplafix-options-label">Kirkkaus</label>
+                <div class="kuplafix-options-row" style="align-items: center;">
+                  <input type="range" min="0.1" max="1.5" step="0.01" id="kuplafix-room-brightness-range" class="kuplafix-range" value="0.90">
+                  <input type="number" min="0.1" max="1.5" step="0.01" id="kuplafix-room-brightness-input" class="kuplafix-options-input kuplafix-inline-number" value="0.90">
+                </div>
+
+                <label class="kuplafix-options-label" style="margin-top: 4px;">Yövalo / päivänvalo (0–100%)</label>
+                <div class="kuplafix-options-row" style="align-items: center;">
+                  <input type="range" min="0" max="100" step="1" id="kuplafix-room-temp-range" class="kuplafix-range" value="35">
+                  <input type="number" min="0" max="100" step="1" id="kuplafix-room-temp-input" class="kuplafix-options-input kuplafix-inline-number" value="35">
+                </div>
+
+                <div class="kuplafix-options-buttons" style="flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                  <button type="button" class="kuplafix-btn" id="kuplafix-temp-preset-neutral">Pois</button>
+                  <button type="button" class="kuplafix-btn" id="kuplafix-temp-preset-cool">Kevyt</button>
+                  <button type="button" class="kuplafix-btn" id="kuplafix-temp-preset-warm">Vahva</button>
+                  <button type="button" class="kuplafix-btn-secondary" id="kuplafix-room-reset">Palauta</button>
+                </div>
+              </form>
+            </div>
+            <div class="kuplafix-feature-status-row">
+              <div class="kuplafix-feature-status" data-role="room-lighting-status">Kirkkaus: 0.90 · Sinivalon vähennys: 35%</div>
+            </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="kuplafix-feature-card collapsed" data-feature="livekit">
+          <div class="kuplafix-feature-header">
+            <div class="kuplafix-drag-handle" title="Raahaa muuttaaksesi järjestystä">⋮⋮</div>
+            <div class="kuplafix-feature-title-row">
+              <div class="kuplafix-feature-title">kupla Meetings (LiveKit)</div>
+            </div>
+            <div class="kuplafix-header-controls">
+
+
+              <label class="kuplafix-toggle" title="Ota ominaisuus käyttöön tai pois">
+                <input type="checkbox" id="kf-livekit">
+                <span class="kuplafix-toggle-slider"></span>
+              </label>
+
+              <button class="kuplafix-minimize-btn" title="Laajenna">▼</button>
+            </div>
+          </div>
+          <div class="kuplafix-feature-content">
+            <div class="kuplafix-feature-description">näytä kuplafix meetings — voice ja näytönjako käyttäen livekit kokousta.</div>
+
+            <div class="kuplafix-feature-body">
+
+            <div class="kuplafix-feature-options-panel" id="kuplafix-panel-livekit">
+              <form class="kuplafix-options-form" id="kuplafix-form-livekit">
+                <label for="kuplafix-endpoint-input" class="kuplafix-options-label">Token-palvelimen URL (Cloudflare Worker)</label>
+                <div class="kuplafix-options-row">
+                  <input type="text" id="kuplafix-endpoint-input" class="kuplafix-options-input" placeholder="https://..." value="https://kuplafix-livekit-auth.kuplafix.workers.dev/">
+                </div>
+                <div style="font-size: 10px; color: #9fb6c1; margin-top: 4px;">
+                  Jätä tyhjäksi käyttääksesi oletustokenia (vain yksi käyttäjä kerrallaan).
+                </div>
+              </form>
+            </div>
+            <div class="kuplafix-feature-status-row">
+              <div class="kuplafix-feature-status" data-role="livekit-status">
+                Pois käytöstä
+              </div>
+            </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="kuplafix-feature-card collapsed" data-feature="browser">
+          <div class="kuplafix-feature-header">
+            <div class="kuplafix-drag-handle" title="Raahaa muuttaaksesi järjestystä">⋮⋮</div>
+            <div class="kuplafix-feature-title-row">
+              <div class="kuplafix-feature-title">kupla etusivu -nappi</div>
+            </div>
+            <div class="kuplafix-header-controls">
+
+
+              <label class="kuplafix-toggle" title="Ota ominaisuus käyttöön tai pois">
+                <input type="checkbox" id="kf-browser" checked="">
+                <span class="kuplafix-toggle-slider"></span>
+              </label>
+
+              <button class="kuplafix-minimize-btn" title="Laajenna">▼</button>
+            </div>
+          </div>
+          <div class="kuplafix-feature-content">
+            <div class="kuplafix-feature-description">lisää painike vasempaan valikkoon, josta voit selata etusivua poistumatta clientistä.</div>
+            <div class="kuplafix-feature-actions-row"><button class="kuplafix-btn-secondary" id="kuplafix-open-browser-now">Avaa</button></div>
+            <div class="kuplafix-feature-body">
+
+            </div>
+          </div>
+        </div>
+
+        <div class="kuplafix-feature-card collapsed" data-feature="voice-messages">
+          <div class="kuplafix-feature-header">
+            <div class="kuplafix-drag-handle" title="Raahaa muuttaaksesi järjestystä">⋮⋮</div>
+            <div class="kuplafix-feature-title-row">
+              <div class="kuplafix-feature-title">ääniviestit</div>
+            </div>
+            <div class="kuplafix-header-controls">
+
+
+              <label class="kuplafix-toggle" title="Ota ominaisuus käyttöön tai pois">
+                <input type="checkbox" id="kf-voice-messages">
+                <span class="kuplafix-toggle-slider"></span>
+              </label>
+
+              <button class="kuplafix-minimize-btn" title="Laajenna">▼</button>
+            </div>
+          </div>
+          <div class="kuplafix-feature-content">
+            <div class="kuplafix-feature-description">nauhoita ja lähetä ääniviesti chatissa.<br>vain muut kuplafix käyttäjät voi kuunnella ääniviestejä.</div>
+            <div class="kuplafix-feature-actions-row"><button class="kuplafix-btn-secondary" id="kuplafix-options-voice-messages" title="Ääniviestien asetukset">Asetukset</button></div>
+            <div class="kuplafix-feature-body">
+
+            <div class="kuplafix-feature-options-panel" id="kuplafix-panel-voice-messages">
+              <form class="kuplafix-options-form" id="kuplafix-form-voice-messages">
+                <label class="kuplafix-options-label">
+                  <input type="checkbox" id="kuplafix-voice-hide-record">
+                  piilota äänitys nappi
+                </label>
+              </form>
+            </div>
+            <div class="kuplafix-feature-status-row">
+              <div class="kuplafix-feature-status" data-role="voice-status">
+                nauhoitus nappi: näkyvissä
+              </div>
+            </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="kuplafix-feature-card collapsed" data-feature="renderer-config">
+          <div class="kuplafix-feature-header">
+            <div class="kuplafix-drag-handle" title="Raahaa muuttaaksesi järjestystä">⋮⋮</div>
+            <div class="kuplafix-feature-title-row">
+              <div class="kuplafix-feature-title">client muokkaus</div>
+            </div>
+            <div class="kuplafix-header-controls">
+
+
+              <label class="kuplafix-toggle" title="Ota ominaisuus käyttöön tai pois">
+                <input type="checkbox" id="kf-renderer-config" checked="">
+                <span class="kuplafix-toggle-slider"></span>
+              </label>
+
+              <button class="kuplafix-minimize-btn" title="Laajenna">▼</button>
+            </div>
+          </div>
+          <div class="kuplafix-feature-content">
+            <div class="kuplafix-feature-description">muokkaa clientin renderer-config.json tiedostoa ennen latausta.</div>
+            <div class="kuplafix-feature-actions-row"><button class="kuplafix-btn-secondary" id="kuplafix-options-renderer-config" title="Muokkaa muuttujia">Asetukset</button></div>
+            <div class="kuplafix-feature-body">
+
+            <div class="kuplafix-feature-options-panel" id="kuplafix-panel-renderer-config">
+              <form class="kuplafix-options-form" id="kuplafix-form-renderer-config">
+                <div style="margin-bottom: 8px;">
+                  <label class="kuplafix-options-label" style="display: block; margin-bottom: 4px;">Renderer Config (JSON):</label>
+                  <textarea id="kuplafix-renderer-overrides" style="width: 100%; height: 60px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; font-family: monospace; font-size: 11px; padding: 4px; resize: vertical;" placeholder="{&quot;system.packet.log&quot;: true}">{}</textarea>
+                </div>
+                <div style="margin-bottom: 8px;">
+                  <label class="kuplafix-options-label" style="display: block; margin-bottom: 4px;">UI Config (JSON):</label>
+                  <textarea id="kuplafix-ui-overrides" style="width: 100%; height: 60px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; font-family: monospace; font-size: 11px; padding: 4px; resize: vertical;" placeholder="{&quot;catalog.links.enabled&quot;: false}">{}</textarea>
+                </div>
+              </form>
+            </div>
+            <div class="kuplafix-feature-status-row">
+              <div class="kuplafix-feature-status" data-role="renderer-config-status">
+                Muuttujia: 0 kpl
+              </div>
+            </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="kuplafix-feature-card collapsed" data-feature="packet-tools">
+          <div class="kuplafix-feature-header">
+            <div class="kuplafix-drag-handle" title="Raahaa muuttaaksesi järjestystä">⋮⋮</div>
+            <div class="kuplafix-feature-title-row">
+              <div class="kuplafix-feature-title">packet tools</div>
+            </div>
+            <div class="kuplafix-header-controls">
+              <button id="kuplafix-open-builder-header" class="kuplafix-btn" style="padding: 2px 8px; font-size: 11px; height: auto;">Packet Builder</button>
+
+
+            </div>
+          </div>
+          <div class="kuplafix-feature-content">
+            <div class="kuplafix-feature-description">työkaluja pakettien lähettämiseen ja tutkimiseen.</div>
+
+            <div class="kuplafix-feature-body">
+
+            </div>
+          </div>
+        </div>
+
+        </div>
+
+        <div class="kuplafix-menu-footer" style="padding-top:15px; margin-top:15px; border-top:1px solid var(--kuplafix-border);">
+          <button class="kuplafix-btn" id="kuplafix-reset-btn" style="width: 100%; background: #7f8c8d; cursor: pointer;">Palauta oletukset</button>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <section id="muutokset">
+      <h2>Viimeisimmät päivitykset:</h2>
+      <ul class="changes"><li>Game mode: WASD-toiminnon valinta, väliaikainen kytkin ja oma pikanäppäin.</li><li>Korjattu chat-popoutin ulkoasu ja suodattimet.</li><li>Päävalikon asetukset tallentuvat automaattisesti.</li><li>Korjattu makrojen vastaanottoasetuksen tallennus.</li></ul>
+    </section>
   </main>
 
-  <script>
-    const bookmarklet = document.querySelector("#kuplafix-bookmarklet");
+  <footer><a href="https://github.com/0-es/kuplafix">GitHub</a> · <a href="https://raw.githubusercontent.com/0-es/kuplafix/main/kuplafix.user.js">Raw userscript</a></footer>
 
+  <script>
+    const featureRailTrack = document.querySelector(".feature-rail-track");
+    const featureRailList = featureRailTrack?.querySelector(".feature-rail-list");
+    if (featureRailTrack && featureRailList && featureRailTrack.children.length === 1) {
+      const featureRailClone = featureRailList.cloneNode(true);
+      featureRailClone.setAttribute("aria-hidden", "true");
+      featureRailTrack.appendChild(featureRailClone);
+    }
+    const bookmarkletLink = document.getElementById("kuplafix-bookmarklet");
+    if (bookmarkletLink) {
+      bookmarkletLink.setAttribute("href", bookmarkletLink.getAttribute("href").replace("peliclientti", "client"));
+    }
+    document.querySelectorAll(".menu-preview .kuplafix-feature-card").forEach((card) => card.classList.add("collapsed"));
+    document.querySelectorAll(".menu-preview .kuplafix-minimize-btn").forEach((button) => {
+      button.textContent = "▼";
+      button.title = "Laajenna";
+      button.addEventListener("click", () => {
+        const card = button.closest(".kuplafix-feature-card");
+        const collapsed = card.classList.toggle("collapsed");
+        button.textContent = collapsed ? "▼" : "▲";
+        button.title = collapsed ? "Laajenna" : "Pienennä";
+      });
+    });
+    document.querySelectorAll(".menu-preview [id^='kuplafix-options-']").forEach((button) => {
+      button.addEventListener("click", () => {
+        const panelId = button.id.replace("kuplafix-options-", "kuplafix-panel-");
+        document.getElementById(panelId)?.classList.toggle("kuplafix-open");
+      });
+    });
+    const bookmarklet = document.querySelector("#kuplafix-bookmarklet");
+    bookmarklet.textContent = "kuplaFix";
     bookmarklet.addEventListener("click", (event) => {
       event.preventDefault();
-
-      alert(
-        "Vedä KuplaFix-painike kirjanmerkkipalkkiin. " +
-        "Älä käynnistä sitä tältä sivulta."
-      );
+      alert("Vedä kuplaFix-painike kirjanmerkkipalkkiin. Älä käynnistä sitä tältä sivulta.");
     });
   </script>
 </body>

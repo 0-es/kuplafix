@@ -36,6 +36,8 @@ KuplaFix-painike ilmestyy Nitro-clientin sivupalkkiin tai työkaluriviin. Avaa s
 - huoneen kirkkaus- ja yövalosäädöt
 - ilmoituskuplien ja tapahtumakutsujen käsittely
 - chat-historian välimuisti
+- erillinen chat-ikkuna samoilla Nitro- ja KuplaFix-tyyleillä
+- Game mode: WASD-ohjaus tai WASD-pikaviestit, muut yhden merkin pikaviestit sekä väliaikainen UI- ja näppäinkytkin
 - ääniviestit
 - LiveKit- ja etusivupainikkeet
 - FastLoad- ja renderer-config-asetukset
@@ -43,13 +45,21 @@ KuplaFix-painike ilmestyy Nitro-clientin sivupalkkiin tai työkaluriviin. Avaa s
 
 Pakettityökalut voivat tarkkailla, muokata ja lähettää peliclientin WebSocket-paketteja. Käytä niitä omalla vastuulla ja Kuplahotellin sääntöjen mukaisesti.
 
-## v2.1.5
+## v2.1.6
 
 - korjattu bookmarkletin käynnistys: Nitro-client käynnistyy uudelleen vasta, kun KuplaFix on valmis
 - säilyttää Nitro-URL:n SSO-parametreineen
 - säilyttää turvallisen iframe-uudelleenkäynnistyksen ilman lupausta ensimmäisen WebSocket-yhteyden koukkaamisesta
 - sitoo iframeen kuuluvat ominaisuudet uudelleen clientin käynnistyessä
 - avaa chat-historian erilliseen ikkunaan samalla ulkoasulla ja samoilla suodatusasetuksilla ilman Nitro-clientin DOMin siirtämistä
+- kopioi Nitro-clientin chat-tyylit erilliseen historiaikkunaan
+- korjaa erillisen historiaikkunan otsikon, sulkupainikkeen ja suodattimien ulkoasun
+- lisää Game moden: WASD-liikkuminen tai WASD-pikaviestit ja kirjainten/numeroiden yhden merkin pikaviestit
+- lisää Game modelle väliaikaisen chat-kentän yläpuolisen kytkimen ja käyttäjän määrittämän pikanäppäimen
+- estää tavallisen kirjoittamisen Game moden ollessa aktiivinen ja mahdollistaa peräkkäiset pikaviestit
+- tallentaa kaikki päävalikon ominaisuusasetukset automaattisesti ilman erillisiä tallennuspainikkeita
+- korjaa Packet Builderin makrojen vastaanottoasetuksen tallennuksen
+- uudistaa bookmarklet-sivun KuplaFix-väreillä ja selkeämmällä asennuspolulla
 - lisää raw GitHub -päivitys- ja latausosoitteet ScriptCatille
 - estää kaksoisalustuksen ja lisää hyödylliset käynnistyslokit
 - säilyttää vanhat asetukset, makrot ja välimuistin

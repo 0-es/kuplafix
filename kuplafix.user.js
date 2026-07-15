@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         kuplafix
 // @namespace    kuplafix
-// @version      2.1.5
+// @version      2.1.6
 // @description  kuplahotelli UI fixes & enhancements (ScriptCat edition)
 // @author       res
 // @match        *://kuplahotelli.com/game/nitro*
@@ -66,7 +66,7 @@
 
   // Keep startup quiet; use `log` for controlled output.
   const SCRIPT_NAME = 'kuplafix';
-  const SCRIPT_VERSION = '2.1.5';
+  const SCRIPT_VERSION = '2.1.6';
   const CONFIG_KEY = 'kuplafix_config';
   const DEBUG_ENABLED = false;
 
@@ -185,6 +185,9 @@
     chatHistoryCacheEnabled: true,
     chatHistoryCacheSize: 1000,
     chatHistoryCacheExpiry: 7 * 24 * 60 * 60 * 1000, // 7 days
+    gameModeEnabled: false,
+    gameModeWasdBehavior: 'movement',
+    gameModeToggleKey: '-',
     roomLightingEnabled: false,
     roomBrightness: 1,
     roomTemperature: 0, // 0-100 yövalo (päivänvalo lämmin) aste
@@ -195,7 +198,8 @@
     packetMacros: '[]', // JSON string of macros
     ignoredOutgoingHeaders: '[]', // JSON string of header IDs
     ignoredIncomingHeaders: '[]', // JSON string of header IDs
-    featureOrder: ['online-count', 'gif-blocker', 'bubble-alerts', 'chat-history', 'room-lighting', 'livekit', 'browser', 'voice-messages', 'renderer-config', 'packet-tools'],
+    acceptAllMacroNotifications: false,
+    featureOrder: ['online-count', 'gif-blocker', 'bubble-alerts', 'chat-history', 'game-mode', 'room-lighting', 'livekit', 'browser', 'voice-messages', 'renderer-config', 'packet-tools'],
     collapsedFeatures: {},
   };
 
@@ -1503,6 +1507,76 @@
           border-color: var(--kuplafix-accent);
         }
 
+        .nitro-chat-input-container.kuplafix-game-mode-anchor {
+          position: relative !important;
+          overflow: visible !important;
+        }
+
+        .kuplafix-game-mode-toggle {
+          position: absolute;
+          right: 0;
+          bottom: calc(100% + 6px);
+          z-index: 100;
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          width: max-content;
+          margin: 0;
+          padding: 5px 8px;
+          color: #fff;
+          background: rgba(20, 25, 30, 0.88);
+          border: 1px solid var(--kuplafix-border);
+          border-radius: 8px;
+          box-shadow: 0 3px 10px rgba(0, 0, 0, .35);
+          font: 600 11px/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .kuplafix-game-mode-toggle input {
+          position: absolute !important;
+          width: 1px !important;
+          height: 1px !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+
+        .kuplafix-game-mode-switch {
+          position: relative;
+          width: 30px;
+          height: 16px;
+          flex: 0 0 30px;
+          border-radius: 999px;
+          background: #44545c;
+          transition: background .16s ease;
+        }
+
+        .kuplafix-game-mode-switch::after {
+          content: '';
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: #fff;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, .45);
+          transition: transform .16s ease;
+        }
+
+        .kuplafix-game-mode-toggle input:checked + .kuplafix-game-mode-switch {
+          background: var(--kuplafix-primary);
+        }
+
+        .kuplafix-game-mode-toggle input:checked + .kuplafix-game-mode-switch::after {
+          transform: translateX(14px);
+        }
+
+        .kuplafix-game-mode-toggle input:focus-visible + .kuplafix-game-mode-switch {
+          outline: 2px solid var(--kuplafix-accent);
+          outline-offset: 2px;
+        }
+
         .kuplafix-chat-history-search-bar {
           padding: 8px;
           background: transparent;
@@ -2263,9 +2337,6 @@
                 <label for="kuplafix-interval-input" class="kuplafix-options-label">Päivitysväli (sekunteina)</label>
                 <div class="kuplafix-options-row">
                   <input type="number" min="5" id="kuplafix-interval-input" class="kuplafix-options-input" value="${intervalSeconds}">
-                  <div class="kuplafix-options-buttons">
-                    <button type="submit" class="kuplafix-btn">Tallenna</button>
-                  </div>
                 </div>
               </form>
             </div>
@@ -2409,9 +2480,6 @@
                 <label for="kuplafix-endpoint-input" class="kuplafix-options-label">Token-palvelimen URL (Cloudflare Worker)</label>
                 <div class="kuplafix-options-row">
                   <input type="text" id="kuplafix-endpoint-input" class="kuplafix-options-input" placeholder="https://..." value="${config.get('livekitTokenEndpoint') || ''}">
-                  <div class="kuplafix-options-buttons">
-                    <button type="submit" class="kuplafix-btn">Tallenna</button>
-                  </div>
                 </div>
                 <div style="font-size: 10px; color: #9fb6c1; margin-top: 4px;">
                   Jätä tyhjäksi käyttääksesi oletustokenia (vain yksi käyttäjä kerrallaan).
@@ -2445,7 +2513,6 @@
                 </div>
                 
                 <div class="kuplafix-options-buttons" style="margin-top: 12px;">
-                  <button type="submit" class="kuplafix-btn">Tallenna asetukset</button>
                   <button type="button" class="kuplafix-btn" id="kuplafix-clear-chat-btn" style="background: #c0392b;">Tyhjennä välimuisti</button>
                 </div>
               </form>
@@ -2458,9 +2525,39 @@
             </div>
           `
         },
+        'game-mode': {
+          title: 'game mode',
+          description: 'ohjaa hahmoa WASD-näppäimillä ja lähetä muut kirjaimet tai numerot heti yhden merkin viesteinä.',
+          toggleId: 'kf-game-mode',
+          configKey: 'gameModeEnabled',
+          settingsBtn: `<button class="kuplafix-btn-secondary" id="kuplafix-options-game-mode" title="Muuta Game mode -asetuksia">Asetukset</button>`,
+          content: `
+            <div class="kuplafix-feature-options-panel" id="kuplafix-panel-game-mode">
+              <form class="kuplafix-options-form" id="kuplafix-form-game-mode">
+                <label for="kuplafix-game-mode-wasd" class="kuplafix-options-label">WASD-toiminto</label>
+                <div class="kuplafix-options-row">
+                  <select id="kuplafix-game-mode-wasd" class="kuplafix-options-input">
+                    <option value="movement" ${config.get('gameModeWasdBehavior') !== 'chat' ? 'selected' : ''}>Liikkuminen</option>
+                    <option value="chat" ${config.get('gameModeWasdBehavior') === 'chat' ? 'selected' : ''}>Pikaviestit</option>
+                  </select>
+                </div>
+                <label for="kuplafix-game-mode-key" class="kuplafix-options-label" style="margin-top:8px;">Game moden väliaikainen pikanäppäin</label>
+                <div class="kuplafix-options-row">
+                  <input type="text" id="kuplafix-game-mode-key" class="kuplafix-options-input" readonly value="" placeholder="Paina näppäintä">
+                </div>
+                <div style="font-size:10px; color:#9fb6c1; margin-top:4px;">Aktivoi kenttä ja paina haluamaasi näppäintä. Backspace poistaa sidonnan.</div>
+              </form>
+            </div>
+            <div class="kuplafix-feature-status-row">
+              <div class="kuplafix-feature-status" data-role="game-mode-status">
+                WASD: ${config.get('gameModeWasdBehavior') === 'chat' ? 'pikaviestit' : 'liikkuminen'} · Pikanäppäin: ${config.get('gameModeToggleKey') || 'ei asetettu'}
+              </div>
+            </div>
+          `
+        },
         'voice-messages': {
           title: 'ääniviestit',
-          description: 'nauhoita ja lähetä se ääniviesti chatissa.<br>vain muut kuplafix käyttäjät voi kuunnella ääniviestejä.',
+          description: 'nauhoita ja lähetä ääniviesti chatissa.<br>vain muut kuplafix käyttäjät voi kuunnella ääniviestejä.',
           toggleId: 'kf-voice-messages',
           configKey: 'voiceMessagesEnabled',
           settingsBtn: `<button class="kuplafix-btn-secondary" id="kuplafix-options-voice-messages" title="Ääniviestien asetukset">Asetukset</button>`,
@@ -2497,11 +2594,10 @@
                   <label class="kuplafix-options-label" style="display: block; margin-bottom: 4px;">UI Config (JSON):</label>
                   <textarea id="kuplafix-ui-overrides" style="width: 100%; height: 60px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; font-family: monospace; font-size: 11px; padding: 4px; resize: vertical;" placeholder='{"catalog.links.enabled": false}'>${JSON.stringify(config.get('uiConfigOverrides') || {}, null, 2)}</textarea>
                 </div>
-                <button type="submit" class="kuplafix-btn">Tallenna muuttujat</button>
               </form>
             </div>
             <div class="kuplafix-feature-status-row">
-              <div class="kuplafix-feature-status">
+              <div class="kuplafix-feature-status" data-role="renderer-config-status">
                 Muuttujia: ${Object.keys(config.get('rendererConfigOverrides') || {}).length + Object.keys(config.get('uiConfigOverrides') || {}).length} kpl
               </div>
             </div>
@@ -2769,13 +2865,11 @@
         });
       }
 
-      if (onlineOptionsForm && intervalInput && onlineOptionsPanel && onlineOptionsBtn) {
-        onlineOptionsForm.addEventListener('submit', (event) => {
-          event.preventDefault();
+      if (intervalInput) {
+        intervalInput.addEventListener('input', () => {
           const parsed = Number.parseInt(intervalInput.value, 10);
           if (!Number.isFinite(parsed) || parsed < 5) {
             intervalInput.classList.add('kuplafix-input-error');
-            intervalInput.focus();
             return;
           }
           intervalInput.classList.remove('kuplafix-input-error');
@@ -2784,12 +2878,10 @@
           if (intervalLabel) {
             intervalLabel.textContent = `Päivitysväli: ${parsed} s`;
           }
-          onlineOptionsPanel.classList.remove('kuplafix-open');
-          onlineOptionsBtn.classList.remove('kuplafix-active');
           ChatEnhancements.refreshState(true);
-          UI.showToast('Päivitysväli tallennettu.');
         });
       }
+      onlineOptionsForm?.addEventListener('submit', (event) => event.preventDefault());
 
       const resetBtn = menu.querySelector('#kuplafix-reset-btn');
       if (resetBtn) {
@@ -2992,13 +3084,7 @@
         updateRoomStatus();
       };
 
-      if (roomLightingForm) {
-        roomLightingForm.addEventListener('submit', (e) => {
-          e.preventDefault();
-          applyRoomLighting();
-          UI.showToast('Huonevalaistuksen asetukset tallennettu.');
-        });
-      }
+      roomLightingForm?.addEventListener('submit', (event) => event.preventDefault());
 
       roomBrightnessRange?.addEventListener('input', () => {
         syncBrightness(roomBrightnessRange.value);
@@ -3080,16 +3166,10 @@
         });
       }
 
-      if (livekitForm && livekitEndpointInput) {
-        livekitForm.addEventListener('submit', (e) => {
-          e.preventDefault();
-          const url = livekitEndpointInput.value.trim();
-          config.set('livekitTokenEndpoint', url);
-          livekitPanel.classList.remove('kuplafix-open');
-          livekitOptionsBtn.classList.remove('kuplafix-active');
-          UI.showToast('LiveKit-tokenin päätepiste tallennettu.');
-        });
-      }
+      livekitEndpointInput?.addEventListener('input', () => {
+        config.set('livekitTokenEndpoint', livekitEndpointInput.value.trim());
+      });
+      livekitForm?.addEventListener('submit', (event) => event.preventDefault());
 
       const bubbleAlertsOptionsBtn = menu.querySelector('#kuplafix-options-bubble-alerts');
       const bubbleAlertsPanel = menu.querySelector('#kuplafix-panel-bubble-alerts');
@@ -3167,6 +3247,55 @@
         }
       });
 
+      bindFeatureToggle('kf-game-mode', 'gameModeEnabled', 'Game mode', (enabled) => GameMode.setConfigured(enabled));
+
+      const gameModeOptionsBtn = menu.querySelector('#kuplafix-options-game-mode');
+      const gameModePanel = menu.querySelector('#kuplafix-panel-game-mode');
+      const gameModeForm = menu.querySelector('#kuplafix-form-game-mode');
+      const gameModeWasd = menu.querySelector('#kuplafix-game-mode-wasd');
+      const gameModeKey = menu.querySelector('#kuplafix-game-mode-key');
+      const gameModeStatus = menu.querySelector('[data-role="game-mode-status"]');
+      if (gameModeKey) {
+        gameModeKey.dataset.boundKey = config.get('gameModeToggleKey') || '';
+        gameModeKey.value = gameModeKey.dataset.boundKey === ' ' ? 'Space' : gameModeKey.dataset.boundKey;
+      }
+
+      if (gameModeOptionsBtn && gameModePanel) {
+        gameModeOptionsBtn.addEventListener('click', () => {
+          closeOtherPanels(gameModePanel);
+          const opened = gameModePanel.classList.toggle('kuplafix-open');
+          gameModeOptionsBtn.classList.toggle('kuplafix-active', opened);
+        });
+      }
+
+      const updateGameModeStatus = () => {
+        if (gameModeStatus) {
+          gameModeStatus.textContent = `WASD: ${config.get('gameModeWasdBehavior') === 'chat' ? 'pikaviestit' : 'liikkuminen'} · Pikanäppäin: ${config.get('gameModeToggleKey') || 'ei asetettu'}`;
+        }
+      };
+
+      gameModeWasd?.addEventListener('change', () => {
+        config.set('gameModeWasdBehavior', gameModeWasd.value === 'chat' ? 'chat' : 'movement');
+        updateGameModeStatus();
+      });
+
+      if (gameModeKey) {
+        gameModeKey.addEventListener('keydown', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (event.key === 'Backspace' || event.key === 'Delete') {
+            gameModeKey.dataset.boundKey = '';
+            gameModeKey.value = '';
+          } else if (!['Control', 'Alt', 'Meta', 'Shift'].includes(event.key)) {
+            gameModeKey.dataset.boundKey = event.key;
+            gameModeKey.value = event.key === ' ' ? 'Space' : event.key;
+          }
+          config.set('gameModeToggleKey', gameModeKey.dataset.boundKey || '');
+          updateGameModeStatus();
+        });
+      }
+      gameModeForm?.addEventListener('submit', (event) => event.preventDefault());
+
       const chatHistoryOptionsBtn = menu.querySelector('#kuplafix-options-chat-history');
       const chatHistoryPanel = menu.querySelector('#kuplafix-panel-chat-history');
       const chatHistoryForm = menu.querySelector('#kuplafix-form-chat-history');
@@ -3187,32 +3316,25 @@
         });
       }
 
-      if (chatHistoryForm) {
-        chatHistoryForm.addEventListener('submit', (e) => {
-          e.preventDefault();
-          const size = parseInt(chatSizeInput.value, 10);
-          const expiryDays = parseInt(chatExpiryInput.value, 10);
-
-          if (size && size >= 100) {
-            config.set('chatHistoryCacheSize', size);
-            ChatHistoryCache.maxCacheSize = size;
-          }
-
-          if (expiryDays && expiryDays >= 1) {
-            const ms = expiryDays * 24 * 60 * 60 * 1000;
-            config.set('chatHistoryCacheExpiry', ms);
-            ChatHistoryCache.expiryTime = ms;
-          }
-
-          if (chatStatusLabel) {
-            chatStatusLabel.innerHTML = `Viestejä: max ${config.get('chatHistoryCacheSize')}<br>Vanhentuu: ${Math.round(config.get('chatHistoryCacheExpiry') / 86400000)} päivässä`;
-          }
-
-          chatHistoryPanel.classList.remove('kuplafix-open');
-          chatHistoryOptionsBtn.classList.remove('kuplafix-active');
-          UI.showToast('Välimuistin asetukset tallennettu.');
-        });
-      }
+      const updateChatHistorySettings = () => {
+        const size = parseInt(chatSizeInput?.value, 10);
+        const expiryDays = parseInt(chatExpiryInput?.value, 10);
+        if (size >= 100 && size <= 5000) {
+          config.set('chatHistoryCacheSize', size);
+          ChatHistoryCache.maxCacheSize = size;
+        }
+        if (expiryDays >= 1 && expiryDays <= 30) {
+          const ms = expiryDays * 24 * 60 * 60 * 1000;
+          config.set('chatHistoryCacheExpiry', ms);
+          ChatHistoryCache.expiryTime = ms;
+        }
+        if (chatStatusLabel) {
+          chatStatusLabel.innerHTML = `Viestejä: max ${config.get('chatHistoryCacheSize')}<br>Vanhentuu: ${Math.round(config.get('chatHistoryCacheExpiry') / 86400000)} päivässä`;
+        }
+      };
+      chatSizeInput?.addEventListener('input', updateChatHistorySettings);
+      chatExpiryInput?.addEventListener('input', updateChatHistorySettings);
+      chatHistoryForm?.addEventListener('submit', (event) => event.preventDefault());
 
       if (chatClearBtn) {
         chatClearBtn.addEventListener('click', () => {
@@ -3280,6 +3402,7 @@
       const rendererForm = menu.querySelector('#kuplafix-form-renderer-config');
       const rendererOverridesTextarea = menu.querySelector('#kuplafix-renderer-overrides');
       const uiOverridesTextarea = menu.querySelector('#kuplafix-ui-overrides');
+      const rendererStatus = menu.querySelector('[data-role="renderer-config-status"]');
 
       if (rendererOptionsBtn && rendererPanel) {
         rendererOptionsBtn.addEventListener('click', () => {
@@ -3293,25 +3416,37 @@
         });
       }
 
-      if (rendererForm && rendererOverridesTextarea && uiOverridesTextarea) {
-        rendererForm.addEventListener('submit', (e) => {
-          e.preventDefault();
+      if (rendererOverridesTextarea && uiOverridesTextarea) {
+        let rendererSaveTimer = null;
+        const saveRendererOverrides = () => {
           try {
             const rVal = rendererOverridesTextarea.value.trim();
             const uVal = uiOverridesTextarea.value.trim();
 
-            const rParsed = JSON.parse(rVal);
-            const uParsed = JSON.parse(uVal);
+            const rParsed = JSON.parse(rVal || '{}');
+            const uParsed = JSON.parse(uVal || '{}');
 
             config.set('rendererConfigOverrides', rParsed);
             config.set('uiConfigOverrides', uParsed);
-
-            UI.showToast('Muuttujat tallennettu. Päivitä sivu (F5) jotta muutokset tulevat voimaan.');
+            rendererOverridesTextarea.classList.remove('kuplafix-input-error');
+            uiOverridesTextarea.classList.remove('kuplafix-input-error');
+            if (rendererStatus) rendererStatus.textContent = `Muuttujia: ${Object.keys(rParsed).length + Object.keys(uParsed).length} kpl · päivitä sivu ottaaksesi käyttöön`;
           } catch (err) {
-            UI.showToast('Virheellinen JSON-muoto: ' + err.message, 'error');
+            rendererOverridesTextarea.classList.toggle('kuplafix-input-error', !isValidJson(rendererOverridesTextarea.value));
+            uiOverridesTextarea.classList.toggle('kuplafix-input-error', !isValidJson(uiOverridesTextarea.value));
           }
-        });
+        };
+        const isValidJson = (value) => {
+          try { JSON.parse(value.trim() || '{}'); return true; } catch (_) { return false; }
+        };
+        const scheduleRendererSave = () => {
+          clearTimeout(rendererSaveTimer);
+          rendererSaveTimer = setTimeout(saveRendererOverrides, 300);
+        };
+        rendererOverridesTextarea.addEventListener('input', scheduleRendererSave);
+        uiOverridesTextarea.addEventListener('input', scheduleRendererSave);
       }
+      rendererForm?.addEventListener('submit', (event) => event.preventDefault());
 
       bindFeatureToggle('kf-renderer-config', 'rendererConfigHijackEnabled', 'Renderöijän konfiguraatio', (enabled) => {
         if (enabled) {
@@ -3582,6 +3717,8 @@
           VoiceMessages.applyFabVisibility(doc);
         }
       }
+
+      if (typeof GameMode !== 'undefined') GameMode.ensureToggle(doc);
     }
   };
 
@@ -5402,6 +5539,7 @@
           wrapper.style.setProperty('display', 'none', 'important');
         }
       });
+
     },
 
     getFilterState() {
@@ -5487,9 +5625,11 @@
         </body></html>`);
       popup.document.close();
 
-      // Use the exact same KuplaFix stylesheet that the in-game history uses.
-      const baseStyles = this.targetDoc?.getElementById('kuplafix-styles');
-      if (baseStyles) popup.document.head.appendChild(baseStyles.cloneNode(true));
+      // The in-game history uses both Nitro's chat-bubble/utility CSS and
+      // KuplaFix's overrides. Copy them in source order so the lightweight
+      // popout renders exactly like the history inside the client.
+      this.copyStylesToPopout(popup.document);
+      this.addPopoutOverrides(popup.document);
 
       this.popoutWindow = popup;
       this.popoutContent = popup.document.getElementById('messages');
@@ -5526,6 +5666,35 @@
       this.syncPopoutFilters(filters.query, filters.hideSystem, filters.hideBots, filters.hideWired);
       this.refreshPopout();
       popup.focus();
+    },
+
+    copyStylesToPopout(popoutDoc) {
+      const sourceDoc = this.targetDoc;
+      if (!sourceDoc?.head || !popoutDoc?.head) return;
+
+      sourceDoc.head.querySelectorAll('link[rel~="stylesheet"], style').forEach((source) => {
+        const clone = source.cloneNode(true);
+        if (clone.tagName === 'LINK') {
+          try { clone.href = source.href; } catch (_) { }
+        }
+        clone.dataset.kuplafixPopoutStyle = 'true';
+        popoutDoc.head.appendChild(clone);
+      });
+    },
+
+    addPopoutOverrides(popoutDoc) {
+      const style = popoutDoc.createElement('style');
+      style.textContent = `
+        html, body { width: 100% !important; height: 100% !important; margin: 0 !important; overflow: hidden !important; }
+        .kuplafix-chat-history-popout-root { width: 100% !important; height: 100% !important; display: flex !important; flex-direction: column !important; }
+        .kuplafix-chat-history-header { position: relative !important; inset: auto !important; transform: none !important; width: 100% !important; min-height: 38px !important; max-height: 38px !important; padding: 0 10px !important; display: flex !important; flex: 0 0 38px !important; align-items: center !important; justify-content: space-between !important; overflow: visible !important; }
+        .kuplafix-chat-history-title { position: static !important; flex: 1 1 auto !important; min-width: 0 !important; margin: 0 !important; padding: 0 !important; }
+        .kuplafix-chat-history-actions { position: static !important; flex: 0 0 auto !important; margin-left: 8px !important; display: flex !important; align-items: center !important; }
+        .kuplafix-chat-history-close { position: static !important; inset: auto !important; transform: none !important; flex: 0 0 24px !important; width: 24px !important; height: 24px !important; margin: 0 !important; padding: 0 !important; display: inline-flex !important; opacity: 1 !important; visibility: visible !important; }
+        .kuplafix-chat-history-search-bar input[type="checkbox"] { appearance: auto !important; -webkit-appearance: checkbox !important; display: inline-block !important; width: 13px !important; height: 13px !important; margin: 0 !important; opacity: 1 !important; visibility: visible !important; accent-color: #176f8f !important; }
+        .kuplafix-chat-history-content { min-height: 0 !important; }
+      `;
+      popoutDoc.head.appendChild(style);
     },
 
     refreshPopout() {
@@ -11976,12 +12145,175 @@
   // These modules are long-lived controllers. Their init methods are run once;
   // iframe-specific work is registered through DOM.onNitroIframeDocReady and is
   // therefore re-run for each replacement Nitro document.
+  const GameMode = {
+    boundDocuments: new WeakSet(),
+    movementKeys: { w: ['ArrowUp', 38], a: ['ArrowLeft', 37], s: ['ArrowDown', 40], d: ['ArrowRight', 39] },
+    temporaryEnabled: true,
+
+    async init() {
+      await DOM.ready;
+      this.bindDocument(document);
+      DOM.onNitroIframeDocReady((doc) => this.bindDocument(doc));
+    },
+
+    bindDocument(doc) {
+      if (!doc || this.boundDocuments.has(doc)) return;
+      this.boundDocuments.add(doc);
+      doc.addEventListener('keydown', (event) => this.handleKey(event, true), true);
+      doc.addEventListener('keyup', (event) => this.handleKey(event, false), true);
+      this.ensureToggle(doc);
+    },
+
+    setConfigured(enabled) {
+      if (enabled) this.temporaryEnabled = true;
+      for (const doc of [document, DOM.getIframeDoc()]) {
+        if (doc) this.ensureToggle(doc);
+      }
+    },
+
+    ensureToggle(doc) {
+      if (!doc) return;
+      const existing = doc.querySelector('.kuplafix-game-mode-toggle');
+      if (!config.get('gameModeEnabled')) {
+        existing?.remove();
+        doc.querySelectorAll('.kuplafix-game-mode-anchor').forEach((element) => element.classList.remove('kuplafix-game-mode-anchor'));
+        return;
+      }
+
+      const chatContainer = doc.querySelector('.nitro-chat-input-container');
+      if (!chatContainer) return;
+      chatContainer.classList.add('kuplafix-game-mode-anchor');
+      if (existing?.isConnected) {
+        const checkbox = existing.querySelector('input');
+        if (checkbox) checkbox.checked = this.temporaryEnabled;
+        return;
+      }
+
+      const toggle = doc.createElement('label');
+      toggle.className = 'kuplafix-game-mode-toggle';
+      toggle.title = 'Poista Game mode väliaikaisesti käytöstä muuttamatta pääasetusta';
+      toggle.innerHTML = `<input type="checkbox" ${this.temporaryEnabled ? 'checked' : ''}><span class="kuplafix-game-mode-switch" aria-hidden="true"></span><span>🕹️</span>`;
+      toggle.querySelector('input').addEventListener('change', (event) => {
+        this.setTemporaryEnabled(event.target.checked);
+      });
+      chatContainer.appendChild(toggle);
+    },
+
+    setTemporaryEnabled(enabled) {
+      this.temporaryEnabled = !!enabled;
+      for (const doc of [document, DOM.getIframeDoc()]) {
+        const checkbox = doc?.querySelector('.kuplafix-game-mode-toggle input');
+        if (checkbox) checkbox.checked = this.temporaryEnabled;
+      }
+      UI.showToast(`Game mode ${this.temporaryEnabled ? 'aktiivinen' : 'tauolla'}`);
+    },
+
+    isEditable(target) {
+      const ElementType = target?.ownerDocument?.defaultView?.Element;
+      return !!ElementType && target instanceof ElementType &&
+        !!target.closest('input, textarea, select, [contenteditable="true"], [contenteditable=""]');
+    },
+
+    handleKey(event, isKeyDown) {
+      if (!config.get('gameModeEnabled') || event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
+      if (event.target?.closest?.('#kuplafix-game-mode-key')) return;
+      const chatInput = event.target?.closest?.('.nitro-chat-input-control');
+      if (!chatInput && this.isEditable(event.target)) return;
+
+      const toggleKey = config.get('gameModeToggleKey');
+      if (toggleKey && event.key === toggleKey) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (isKeyDown && !event.repeat) this.setTemporaryEnabled(!this.temporaryEnabled);
+        return;
+      }
+      if (!this.temporaryEnabled) return;
+
+      const movement = this.movementKeys[event.key?.toLowerCase()];
+      if (movement && config.get('gameModeWasdBehavior') !== 'chat') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        this.activateMovement(event.target?.ownerDocument || event.currentTarget, movement[0], movement[1], isKeyDown, event.repeat);
+        return;
+      }
+
+      if (!isKeyDown || event.repeat || !/^[a-z0-9]$/i.test(event.key || '')) {
+        if (chatInput && (event.key || '').length === 1) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+        return;
+      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      this.sendInstantMessage(event.target?.ownerDocument || event.currentTarget, event.key);
+    },
+
+    activateMovement(doc, key, keyCode, isKeyDown, repeat) {
+      if (isKeyDown) {
+        const control = this.findMovementControl(doc, key);
+        if (control) {
+          control.click();
+          return;
+        }
+      }
+
+      const view = doc.defaultView || window;
+      const target = doc.activeElement || doc.body || doc.documentElement;
+      target.dispatchEvent(new view.KeyboardEvent(isKeyDown ? 'keydown' : 'keyup', {
+        key, code: key, keyCode, which: keyCode, bubbles: true, cancelable: true, repeat: !!repeat,
+      }));
+    },
+
+    findMovementControl(doc, key) {
+      const words = {
+        ArrowUp: /(?:^|[\s"'_=:\-])(?:arrow|direction|move|control)?[-_ ]?(?:up|north|top|ylös)(?:[\s"'_=:\-]|$)|[↑⬆]/i,
+        ArrowLeft: /(?:^|[\s"'_=:\-])(?:arrow|direction|move|control)?[-_ ]?(?:left|west|vasen)(?:[\s"'_=:\-]|$)|[←⬅]/i,
+        ArrowDown: /(?:^|[\s"'_=:\-])(?:arrow|direction|move|control)?[-_ ]?(?:down|south|bottom|alas)(?:[\s"'_=:\-]|$)|[↓⬇]/i,
+        ArrowRight: /(?:^|[\s"'_=:\-])(?:arrow|direction|move|control)?[-_ ]?(?:right|east|oikea)(?:[\s"'_=:\-]|$)|[→➡]/i,
+      };
+      const matcher = words[key];
+      return Array.from(doc.querySelectorAll('button, [role="button"]')).find((element) => {
+        if (element.closest('.kuplafix-menu, .kuplafix-chat-history-window')) return false;
+        const signature = [element.id, element.className, element.getAttribute('title'), element.getAttribute('aria-label'), element.getAttribute('data-direction'), element.textContent, element.innerHTML].join(' ');
+        return matcher.test(signature) && !element.disabled;
+      }) || null;
+    },
+
+    sendInstantMessage(doc, text) {
+      const chatInput = doc?.querySelector('.nitro-chat-input-control');
+      if (!chatInput) {
+        UI.showToast('Chat-kenttää ei löytynyt.');
+        return;
+      }
+
+      const view = doc.defaultView || window;
+      const inputPrototype = view.HTMLInputElement?.prototype;
+      const valueSetter = inputPrototype && Object.getOwnPropertyDescriptor(inputPrototype, 'value')?.set;
+      if (valueSetter) valueSetter.call(chatInput, text);
+      else chatInput.value = text;
+      chatInput.dispatchEvent(new view.Event('input', { bubbles: true }));
+      for (const type of ['keydown', 'keyup']) {
+        chatInput.dispatchEvent(new view.KeyboardEvent(type, {
+          key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true,
+        }));
+      }
+      queueMicrotask(() => {
+        if (valueSetter) valueSetter.call(chatInput, '');
+        else chatInput.value = '';
+        chatInput.dispatchEvent(new view.Event('input', { bubbles: true }));
+        chatInput.blur();
+      });
+    },
+  };
+
   const GLOBAL_MODULES = [
     Styles,
     UI,
     ChatHistoryUI,
     ChatEnhancements,
     ChatInputObserver,
+    GameMode,
     GifBlocker,
     RoomLighting,
     BubbleAlerts,

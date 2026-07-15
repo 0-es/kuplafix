@@ -1,0 +1,1508 @@
+
+        /* kuplafix v2.1.6 base styles */
+
+        :root {
+          --kuplafix-primary: #176f8f;
+          --kuplafix-accent: #7cb1c8;
+          --kuplafix-bg: rgba(31, 41, 46, 0.95);
+          --kuplafix-border: #364951;
+        }
+
+        /* Custom Scrollbar */
+        .kuplafix-menu::-webkit-scrollbar,
+        .kuplafix-console-content::-webkit-scrollbar,
+        .pb-header-dropdown::-webkit-scrollbar,
+        .kuplafix-chat-history-content::-webkit-scrollbar,
+        #pb-content::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .kuplafix-menu::-webkit-scrollbar-track,
+        .kuplafix-console-content::-webkit-scrollbar-track,
+        .pb-header-dropdown::-webkit-scrollbar-track,
+        .kuplafix-chat-history-content::-webkit-scrollbar-track,
+        #pb-content::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.1);
+          border-radius: 10px;
+        }
+
+        .kuplafix-menu::-webkit-scrollbar-thumb,
+        .kuplafix-console-content::-webkit-scrollbar-thumb,
+        .pb-header-dropdown::-webkit-scrollbar-thumb,
+        .kuplafix-chat-history-content::-webkit-scrollbar-thumb,
+        #pb-content::-webkit-scrollbar-thumb {
+          background: var(--kuplafix-border);
+          border-radius: 10px;
+        }
+
+        .kuplafix-menu::-webkit-scrollbar-thumb:hover,
+        .kuplafix-console-content::-webkit-scrollbar-thumb:hover,
+        .pb-header-dropdown::-webkit-scrollbar-thumb:hover,
+        .kuplafix-chat-history-content::-webkit-scrollbar-thumb:hover,
+        #pb-content::-webkit-scrollbar-thumb:hover {
+          background: var(--kuplafix-accent);
+        }
+
+        .kuplafix-menu {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: var(--kuplafix-bg);
+          border: 1px solid var(--kuplafix-border);
+          border-radius: 8px;
+          color: white;
+          padding: 15px;
+          width: 92%;
+          max-width: 440px;
+          z-index: 99999;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+          max-height: 80vh;
+          overflow-y: auto;
+        }
+
+        .kuplafix-menu-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center; /* center vertically so ascii and close btn align */
+          gap: 10px;
+          margin-bottom: 12px;
+          cursor: move;
+          position: relative; /* anchor close button */
+          padding-right: 60px; /* leave space for the close button hovering top-right */
+        }
+
+        /* Render ASCII header as plain preformatted text without a separate "boxed" background
+           so it visually matches the old script. Allow it to extend (overflow visible) and keep
+           monospace formatting. */
+        .kuplafix-menu-ascii {
+          flex: 1 1 auto;
+          display: block;
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 6px; /* smaller so full ascii fits without clipping */
+          line-height: 0.95;
+          color: var(--kuplafix-accent);
+          background: transparent;
+          border: none;
+          border-radius: 0;
+          padding: 0;
+          margin: 0;
+          white-space: pre; /* preserve ASCII spacing */
+          max-height: none;
+          overflow: visible; /* no scrollbars, let ASCII render fully */
+          box-sizing: content-box;
+        }
+
+        /* Place the close button as a hoverable control in the top-right corner of the menu */
+        .kuplafix-close-btn {
+          position: absolute;
+          right: 8px;
+          background: transparent;
+          color: #ffffff;
+          border: 1px solid rgba(54, 73, 81, 0.7);
+          padding: 6px 10px;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
+          font-size: 14px;
+          z-index: 100001;
+        }
+
+        .kuplafix-close-btn:hover {
+          background: rgba(23, 111, 143, 0.22);
+          border-color: var(--kuplafix-accent);
+          transform: translateY(-1px);
+        }
+
+        .kuplafix-menu-subtitle {
+          margin: 0 0 18px 0;
+          font-size: 13px;
+          color: #a9c0cc;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .kuplafix-feature-card {
+          background: rgba(17, 23, 27, 0.7);
+          border: 1px solid rgba(54, 73, 81, 0.7);
+          border-radius: 8px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          margin-bottom: 4px;
+        }
+
+        .kuplafix-feature-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .kuplafix-feature-actions-top {
+          display: flex;
+          justify-content: flex-end;
+        }
+
+        .kuplafix-feature-meta {
+          flex: 1 1 auto;
+          min-width: 0;
+        }
+
+        .kuplafix-feature-title {
+          font-size: 14px;
+          font-weight: 600;
+          color: #ffffff;
+          margin: 0;
+        }
+
+        .kuplafix-feature-description {
+          font-size: 12px;
+          color: #cbd6dc;
+          margin-top: 4px;
+          line-height: 1.4;
+        }
+
+        .kuplafix-feature-body {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .kuplafix-feature-status-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          gap: 12px;
+        }
+
+        .kuplafix-feature-status {
+
+          font-size: 12px;
+          color: #9fb6c1;
+        }
+
+        .kuplafix-feature-toggle-area {
+          display: flex;
+          justify-content: flex-end;
+        }
+
+        .kuplafix-toggle {
+          position: relative;
+          display: inline-block;
+          width: 44px;
+          height: 24px;
+        }
+
+        .kuplafix-toggle input {
+          opacity: 0;
+          width: 0;
+          height: 0;
+        }
+
+        .kuplafix-toggle-slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #2c3b43;
+          transition: 0.3s;
+          border-radius: 24px;
+        }
+
+        .kuplafix-toggle-slider:before {
+          position: absolute;
+          content: '';
+          height: 20px;
+          width: 20px;
+          left: 2px;
+          bottom: 2px;
+          background-color: #718792;
+          transition: 0.3s;
+          border-radius: 50%;
+        }
+
+        .kuplafix-toggle input:checked + .kuplafix-toggle-slider {
+          background-color: var(--kuplafix-primary);
+        }
+
+        .kuplafix-toggle input:checked + .kuplafix-toggle-slider:before {
+          transform: translateX(20px);
+          background-color: var(--kuplafix-accent);
+        }
+
+        .kuplafix-btn {
+          background: var(--kuplafix-primary);
+          color: white;
+          border: none;
+          padding: 6px 12px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 12px;
+          transition: background 0.2s;
+        }
+
+        .kuplafix-btn:hover {
+          background: var(--kuplafix-accent);
+        }
+
+        .kuplafix-btn-secondary {
+          background: transparent;
+          color: var(--kuplafix-accent);
+          border: 1px solid var(--kuplafix-border);
+          padding: 6px 12px;
+          border-radius: 4px;
+          font-size: 12px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .kuplafix-btn-secondary:hover {
+          border-color: var(--kuplafix-accent);
+          color: #ffffff;
+        }
+
+        .kuplafix-btn-secondary.kuplafix-active,
+        .kuplafix-btn-secondary.kuplafix-active:hover {
+          background: rgba(23, 111, 143, 0.35);
+          border-color: var(--kuplafix-accent);
+          color: #ffffff;
+        }
+
+        .kuplafix-feature-options-panel {
+          display: none;
+          background: rgba(12, 18, 22, 0.7);
+          border: 1px solid rgba(54, 73, 81, 0.7);
+          border-radius: 6px;
+          padding: 12px;
+        }
+
+        .kuplafix-feature-options-panel.kuplafix-open {
+          display: block;
+        }
+
+        .kuplafix-options-form {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .kuplafix-options-label {
+          font-size: 12px;
+          color: #cbd6dc;
+        }
+
+        .kuplafix-options-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          align-items: center;
+        }
+
+        .kuplafix-options-input {
+          flex: 1 1 120px;
+          background: rgba(12, 18, 22, 0.8);
+          border: 1px solid rgba(54, 73, 81, 0.8);
+          border-radius: 4px;
+          padding: 6px 8px;
+          color: #ffffff;
+          font-size: 12px;
+        }
+
+        .kuplafix-range {
+          flex: 1 1 180px;
+          accent-color: var(--kuplafix-accent);
+        }
+
+        .kuplafix-inline-number {
+          width: 86px;
+          min-width: 70px;
+        }
+
+        .kuplafix-options-input:focus {
+          outline: none;
+          border-color: var(--kuplafix-accent);
+          box-shadow: 0 0 0 1px rgba(124, 177, 200, 0.4);
+        }
+
+        .kuplafix-input-error {
+          border-color: #c0392b !important;
+        }
+
+        /* Custom checkbox styling for macros */
+        .kuplafix-macro-checkbox {
+          appearance: none;
+          -webkit-appearance: none;
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(124, 177, 200, 0.4);
+          border-radius: 3px;
+          background: rgba(12, 18, 22, 0.8);
+          cursor: pointer;
+          position: relative;
+          flex-shrink: 0;
+          transition: all 0.2s ease;
+        }
+
+        .kuplafix-macro-checkbox:hover {
+          border-color: rgba(124, 177, 200, 0.7);
+          background: rgba(12, 18, 22, 0.95);
+        }
+
+        .kuplafix-macro-checkbox:checked {
+          background: var(--kuplafix-accent);
+          border-color: var(--kuplafix-accent);
+        }
+
+        .kuplafix-macro-checkbox:checked::after {
+          content: '✓';
+
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          color: #ffffff;
+          font-size: 11px;
+          font-weight: bold;
+          line-height: 1;
+        }
+
+        .kuplafix-macro-checkbox:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .kuplafix-options-buttons {
+          display: flex;
+          gap: 8px;
+        }
+
+        .kuplafix-menu-footer {
+          margin-top: 18px;
+          padding-top: 15px;
+          border-top: 1px solid var(--kuplafix-border);
+        }
+
+        /* Upscale the spritesheet icon without stretching; scale the glyph 1.2x */
+        #kuplafix-config-btn.kuplafix-config-button {
+          width: 32px !important;
+          height: 32px !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          margin-top: 0 !important;
+          transform: scale(1.2) !important; /* upscale the spritesheet icon without distortion */
+          font-size: inherit !important;
+          line-height: 1 !important;
+          padding: 0 !important;
+          transform-origin: center;
+        }
+
+        /* ensure the label stays aligned with the icon */
+        #kuplafix-config-btn-container .w-100.text-center {
+          margin-top: 4px !important;
+        }
+
+        /* GIF Blocker styles */
+        .kuplafix-gif-hidden {
+          display: none !important;
+          visibility: hidden !important;
+        }
+
+        .kuplafix-gif-spoiler {
+          position: relative !important;
+          overflow: hidden !important;
+        }
+
+        .kuplafix-gif-spoiler .chat-bubble,
+        .kuplafix-gif-spoiler .chat-content {
+          visibility: hidden !important;
+        }
+
+        .kuplafix-gif-spoiler-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.7);
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          z-index: 1000;
+          transition: opacity 0.2s ease;
+          min-width: 200px;
+          min-height: 120px;
+        }
+
+        .kuplafix-gif-spoiler-overlay:hover {
+          background: rgba(0, 0, 0, 0.85);
+        }
+
+        .kuplafix-gif-spoiler-text {
+          color: #999999;
+          font-size: 12px;
+          text-align: center;
+          font-weight: 500;
+          padding: 8px;
+          user-select: none;
+          pointer-events: none;
+        }
+
+        .kuplafix-gif-spoiler-overlay.revealed {
+          display: none !important;
+        }
+
+        .kuplafix-gif-spoiler-placeholder {
+          opacity: 0.6;
+          font-style: italic;
+        }
+
+        .kuplafix-whitelist-user-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: rgba(23, 111, 143, 0.3);
+          border: 1px solid #7cb1c8;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 11px;
+          color: #ffffff;
+          margin: 4px 4px 4px 0;
+        }
+
+        .kuplafix-whitelist-user-tag button {
+          background: transparent;
+          border: none;
+          color: inherit;
+          cursor: pointer;
+          padding: 0;
+          font-size: 12px;
+          opacity: 0.7;
+          transition: opacity 0.2s;
+        }
+
+        .kuplafix-whitelist-user-tag button:hover {
+          opacity: 1;
+        }
+
+        .kuplafix-whitelist-container {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 2px;
+          margin-top: 8px;
+          min-height: 24px;
+        }
+
+        /* Persistent Notification Clone Styling */
+        #kuplafix-notification-clones {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 0.25rem !important;
+          pointer-events: none !important;
+          width: 100% !important;
+          position: relative !important;
+          z-index: auto !important;
+          overflow: visible !important;
+          flex-shrink: 0 !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+
+        /* Native-like fadeInDown animation for persistent notifications */
+        @keyframes kuplafix-fadeInDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        #kuplafix-notification-clones .animate__animated {
+          animation: kuplafix-fadeInDown 0.3s ease-out forwards;
+        }
+
+        #kuplafix-notification-clones .nitro-notification-bubble {
+          background: rgba(17, 23, 27, 0.95) !important;
+          border: 1px solid rgba(124, 177, 200, 0.3) !important;
+          border-radius: 6px !important;
+          padding: 12px 16px !important;
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5) !important;
+          backdrop-filter: blur(8px);
+          transition: all 0.2s ease;
+          color: #ffffff !important;
+          position: relative !important;
+
+          z-index: auto !important;
+          margin: 0 !important;
+          pointer-events: auto !important;
+          cursor: pointer !important;
+        }
+
+        /* Event Invite Notification Styling */
+        .kuplafix-event-notification {
+          background: rgba(17, 23, 27, 0.95) !important;
+          border: 1px solid rgba(124, 177, 200, 0.3) !important;
+          border-radius: 6px !important;
+          padding: 12px 16px !important;
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5) !important;
+          backdrop-filter: blur(8px);
+          color: #ffffff !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 12px !important;
+          cursor: pointer !important;
+          pointer-events: auto !important;
+          transition: all 0.2s ease;
+        }
+
+        .kuplafix-event-notification:hover {
+          border-color: rgba(124, 177, 200, 0.6) !important;
+          box-shadow: 0 4px 16px rgba(23, 111, 143, 0.3) !important;
+        }
+
+        .kuplafix-event-notification-icon {
+          width: 32px;
+          height: 32px;
+          flex-shrink: 0;
+        }
+
+        .kuplafix-event-notification-content {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .kuplafix-event-notification-title {
+          font-weight: bold;
+          font-size: 12px;
+          color: #7cb1c8;
+          margin-bottom: 2px;
+        }
+
+        .kuplafix-event-notification-text {
+          font-size: 11px;
+          color: #ffffff;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .kuplafix-event-notification-button {
+          background: var(--kuplafix-primary);
+          color: white;
+          border: none;
+          padding: 4px 10px;
+          border-radius: 4px;
+          font-size: 11px;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: background 0.2s;
+        }
+
+        .kuplafix-event-notification-button:hover {
+          background: var(--kuplafix-accent);
+        }
+
+        /* Console Log Styles */
+        .kuplafix-console {
+          background: #0c1216;
+          border: 1px solid var(--kuplafix-border);
+          border-radius: 4px;
+          font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+          font-size: 11px;
+          color: #cbd6dc;
+          height: 400px;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+
+        .kuplafix-console-header {
+          background: rgba(23, 111, 143, 0.15);
+          border-bottom: 1px solid var(--kuplafix-border);
+          padding: 4px 8px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .kuplafix-console-content {
+          flex: 1;
+          overflow-y: auto;
+          padding: 4px 0;
+          scroll-behavior: smooth;
+        }
+
+        .kuplafix-console-line {
+          padding: 2px 8px;
+          border-bottom: 1px solid rgba(54, 73, 81, 0.2);
+          display: flex;
+          gap: 8px;
+          cursor: pointer;
+          transition: background 0.1s;
+          white-space: nowrap;
+        }
+
+        .kuplafix-console-line:hover {
+          background: rgba(23, 111, 143, 0.1);
+        }
+
+        .kuplafix-console-time {
+          color: #5c707a;
+          flex-shrink: 0;
+          width: 55px;
+        }
+
+        .kuplafix-console-id {
+          color: #7cb1c8;
+          font-weight: bold;
+          flex-shrink: 0;
+          width: 40px;
+        }
+
+        .kuplafix-console-name {
+          color: #fff;
+          flex-shrink: 0;
+          width: 150px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .kuplafix-console-hex {
+          color: #888;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        /* Searchable Dropdown Styles */
+        .pb-header-search-container {
+          position: relative;
+          width: 100%;
+        }
+
+        .pb-header-dropdown {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          background: #1a2429;
+          border: 1px solid var(--kuplafix-border);
+          border-top: none;
+          max-height: 300px;
+          overflow-y: auto;
+          z-index: 1000;
+          display: none;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        .pb-header-dropdown.open {
+          display: block;
+        }
+
+        .pb-header-item {
+          padding: 6px 10px;
+          cursor: pointer;
+          font-size: 12px;
+          color: #cbd6dc;
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+          display: flex;
+          justify-content: space-between;
+        }
+
+        .pb-header-item:hover {
+          background: var(--kuplafix-primary);
+          color: #fff;
+        }
+
+
+        .pb-header-item-id {
+          color: #7cb1c8;
+          font-weight: bold;
+          font-family: monospace;
+        }
+
+        /* In-Game Browser Styles */
+        .kuplafix-browser {
+          position: fixed;
+          background: var(--kuplafix-bg);
+          border: 1px solid var(--kuplafix-border);
+          border-radius: 8px;
+          z-index: 100002;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+          overflow: hidden;
+          width: 800px;
+          height: 600px;
+          resize: both;
+          min-width: 320px;
+          min-height: 240px;
+        }
+
+        /* Fix white corner on resize handle/scrollbars */
+        .kuplafix-browser::-webkit-scrollbar { width: 8px; height: 8px; }
+        .kuplafix-browser::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+        .kuplafix-browser::-webkit-scrollbar-thumb { background: var(--kuplafix-border); border-radius: 4px; }
+        .kuplafix-browser::-webkit-scrollbar-corner { background: transparent; }
+
+        .kuplafix-browser-header {
+          background: rgba(23, 111, 143, 0.15);
+          border-bottom: 1px solid var(--kuplafix-border);
+          padding: 8px 12px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          cursor: move;
+        }
+
+        .kuplafix-browser-title {
+            font-size: 13px;
+            color: #cbd6dc;
+            font-weight: 600;
+        }
+
+        .kuplafix-browser-content {
+            flex: 1;
+            background: #000;
+            position: relative;
+        }
+
+        .kuplafix-browser iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+            color-scheme: dark;
+            background-color: #1a2429; /* Dark background to prevent white flash/corners */
+        }
+
+        #kuplafix-notification-clones .nitro-notification-bubble:hover {
+          border-color: rgba(124, 177, 200, 0.6) !important;
+          box-shadow: 0 4px 16px rgba(23, 111, 143, 0.3) !important;
+        }
+
+        /* Ensure text content is visible */
+        #kuplafix-notification-clones .nitro-notification-bubble .text-white {
+          color: #ffffff !important;
+        }
+
+        /* Timestamp styling inside cloned notifications */
+        #kuplafix-notification-clones .kuplafix-alert-timestamp {
+          font-size: 10px !important;
+          color: #7cb1c8 !important;
+          opacity: 0.7 !important;
+          margin-top: 4px !important;
+          text-align: right !important;
+        }
+
+        /* Icon container for cloned notifications */
+        #kuplafix-notification-clones .bubble-image-container {
+          min-width: 24px;
+          min-height: 24px;
+          flex-shrink: 0;
+          opacity: 0.9;
+        }
+
+        /* LiveKit Integration */
+        .kuplafix-livekit-window {
+          position: fixed;
+          width: 960px;
+          height: 600px;
+          background: var(--kuplafix-bg);
+          border: 1px solid var(--kuplafix-border);
+          border-radius: 8px;
+          z-index: 100000;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+          resize: both;
+          overflow: hidden;
+        }
+
+        .kuplafix-livekit-header {
+          padding: 10px;
+          background: rgba(0, 0, 0, 0.2);
+          border-bottom: 1px solid var(--kuplafix-border);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          cursor: move;
+          color: white;
+          font-weight: bold;
+          font-size: 14px;
+        }
+
+        .kuplafix-livekit-iframe {
+          flex: 1;
+          border: none;
+          width: 100%;
+          height: 100%;
+          background: #000;
+        }
+
+        /* Chat History Window */
+        .kuplafix-chat-history-window {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 300px;
+          height: 300px;
+          z-index: 9000; /* High z-index */
+          display: flex;
+          flex-direction: column;
+          resize: both;
+          overflow: hidden;
+          background: rgba(20, 25, 30, 0.85);
+          border: 1px solid var(--kuplafix-border);
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+          padding-right: 12px;
+          padding-bottom: 12px;
+          box-sizing: border-box;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .kuplafix-chat-history-header {
+          min-height: 33px;
+          max-height: 33px;
+          background: transparent;
+          border-bottom: 1px solid var(--kuplafix-border);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 10px;
+          cursor: move;
+          position: relative;
+        }
+
+        .kuplafix-chat-history-title {
+          color: #fff;
+          font-weight: bold;
+          font-size: 13px;
+          margin-top: 0;
+        }
+
+        .kuplafix-chat-history-actions {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        }
+
+        .kuplafix-chat-history-popout,
+        .kuplafix-chat-history-close {
+          cursor: pointer;
+          width: 20px;
+          height: 20px;
+
+          background: transparent;
+          border: 1px solid rgba(54, 73, 81, 0.7);
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 12px;
+          line-height: 1;
+          transition: all 0.15s ease;
+        }
+
+        .kuplafix-chat-history-popout:hover,
+        .kuplafix-chat-history-close:hover {
+          background: rgba(23, 111, 143, 0.22);
+          border-color: var(--kuplafix-accent);
+        }
+
+        .nitro-chat-input-container.kuplafix-game-mode-anchor {
+          position: relative !important;
+          overflow: visible !important;
+        }
+
+        .kuplafix-game-mode-toggle {
+          position: absolute;
+          right: 0;
+          bottom: calc(100% + 6px);
+          z-index: 100;
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          width: max-content;
+          margin: 0;
+          padding: 5px 8px;
+          color: #fff;
+          background: rgba(20, 25, 30, 0.88);
+          border: 1px solid var(--kuplafix-border);
+          border-radius: 8px;
+          box-shadow: 0 3px 10px rgba(0, 0, 0, .35);
+          font: 600 11px/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .kuplafix-game-mode-toggle input {
+          position: absolute !important;
+          width: 1px !important;
+          height: 1px !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+
+        .kuplafix-game-mode-switch {
+          position: relative;
+          width: 30px;
+          height: 16px;
+          flex: 0 0 30px;
+          border-radius: 999px;
+          background: #44545c;
+          transition: background .16s ease;
+        }
+
+        .kuplafix-game-mode-switch::after {
+          content: '';
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: #fff;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, .45);
+          transition: transform .16s ease;
+        }
+
+        .kuplafix-game-mode-toggle input:checked + .kuplafix-game-mode-switch {
+          background: var(--kuplafix-primary);
+        }
+
+        .kuplafix-game-mode-toggle input:checked + .kuplafix-game-mode-switch::after {
+          transform: translateX(14px);
+        }
+
+        .kuplafix-game-mode-toggle input:focus-visible + .kuplafix-game-mode-switch {
+          outline: 2px solid var(--kuplafix-accent);
+          outline-offset: 2px;
+        }
+
+        .kuplafix-chat-history-search-bar {
+          padding: 8px;
+          background: transparent;
+          border-bottom: 1px solid var(--kuplafix-border);
+        }
+
+        .kuplafix-chat-history-search-bar input[type="checkbox"] {
+          width: 10px;
+          height: 10px;
+          margin: 0;
+          transform: scale(0.7);
+        }
+
+        .kuplafix-chat-history-search-input {
+          width: 100%;
+          background: rgba(12, 18, 22, 0.8);
+          border: 1px solid rgba(54, 73, 81, 0.8);
+          border-radius: 4px;
+          padding: 6px 8px;
+          color: #ffffff;
+          font-size: 12px;
+          box-sizing: border-box;
+          font-family: inherit;
+        }
+
+        .kuplafix-chat-history-search-input:focus {
+          outline: none;
+          border-color: var(--kuplafix-accent);
+        }
+
+        .kuplafix-chat-history-content {
+          flex: 1;
+          overflow-y: auto;
+          padding: 10px;
+          background: transparent;
+          display: flex;
+          flex-direction: column;
+          width: 100% !important; /* Ensure full width */
+          box-sizing: border-box;
+          font-family: 'Ubuntu', 'Segoe UI', sans-serif;
+          font-size: 14px;
+          font-weight: 500;
+        }
+
+        /* Last message highlight animation */
+        @keyframes kuplafix-highlight-pulse {
+          0% { background-color: transparent; }
+          20% { background-color: rgba(124, 177, 200, 0.3); }
+          40% { background-color: transparent; }
+          60% { background-color: rgba(124, 177, 200, 0.3); }
+          80% { background-color: transparent; }
+          100% { background-color: rgba(124, 177, 200, 0.15); }
+        }
+
+        .kuplafix-last-message-highlight {
+          animation: kuplafix-highlight-pulse 2s ease-out forwards;
+          border-radius: 4px;
+          position: relative;
+        }
+
+        .kuplafix-last-message-tooltip {
+          position: absolute;
+          top: -24px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(23, 111, 143, 0.9);
+          color: white;
+          font-size: 10px;
+          padding: 4px 8px;
+          border-radius: 4px;
+          white-space: nowrap;
+          z-index: 10;
+          opacity: 0;
+          animation: kuplafix-tooltip-fade 4s ease-out forwards;
+          pointer-events: none;
+        }
+
+        .kuplafix-last-message-tooltip::after {
+          content: '';
+          position: absolute;
+          top: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          border: 5px solid transparent;
+          border-top-color: rgba(23, 111, 143, 0.9);
+        }
+
+        @keyframes kuplafix-tooltip-fade {
+          0% { opacity: 0; transform: translateX(-50%) translateY(5px); }
+          10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+          80% { opacity: 1; }
+          100% { opacity: 0; }
+
+        }
+
+        /* Session divider */
+        .kuplafix-session-divider {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin: 12px 0;
+          color: #7cb1c8;
+          font-size: 10px;
+          opacity: 0.8;
+        }
+
+        .kuplafix-session-divider::before,
+        .kuplafix-session-divider::after {
+          content: '';
+          flex: 1;
+          height: 1px;
+          background: linear-gradient(to right, transparent, rgba(124, 177, 200, 0.4), transparent);
+        }
+
+        .kuplafix-session-divider span {
+          white-space: nowrap;
+          padding: 2px 8px;
+          background: rgba(23, 111, 143, 0.2);
+          border-radius: 10px;
+        }
+
+        /* Click timestamp tooltip */
+        .kuplafix-timestamp-popup {
+          position: fixed;
+          background: rgba(23, 111, 143, 0.95);
+          color: white;
+          font-size: 11px;
+          padding: 6px 10px;
+          border-radius: 4px;
+          white-space: nowrap;
+          z-index: 99999999;
+          pointer-events: none;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          animation: kuplafix-popup-appear 0.2s ease-out;
+          transition: opacity 0.3s;
+        }
+
+        @keyframes kuplafix-popup-appear {
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes kuplafix-toast-appear {
+          from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        .kuplafix-toast {
+          animation: kuplafix-toast-appear 0.3s ease-out !important;
+        }
+
+        .kuplafix-chat-history-content .d-flex.p-1 {
+          cursor: pointer;
+          transition: background 0.15s ease;
+          border-radius: 4px;
+        }
+
+        .kuplafix-chat-history-content .d-flex.p-1:hover {
+          background: rgba(124, 177, 200, 0.1);
+        }
+
+        /* Chat Bubble Overrides for History */
+        .kuplafix-chat-history-content .bubble-container {
+          position: relative !important; /* Override absolute from widget */
+          top: auto !important;
+          left: auto !important;
+          transform: none !important;
+          margin-bottom: 0 !important;
+          width: fit-content !important;
+          height: auto !important; /* Prevent collapse */
+          min-height: 28px;
+          display: block !important;
+        }
+
+        .kuplafix-chat-history-content .chat-bubble {
+            position: relative !important; /* Fix overlap */
+            top: auto !important;
+            left: auto !important;
+            max-width: 100% !important;
+            width: auto !important;
+            height: auto !important;
+            transform: none !important;
+            margin: 0 !important;
+        }
+
+        .kuplafix-chat-history-content .user-container {
+            position: absolute !important;
+            top: 0px;
+            width: 24px !important;
+            height: 24px !important;
+            overflow: hidden !important;
+            pointer-events: none;
+            z-index: 1;
+            display: block !important;
+        }
+
+        .kuplafix-chat-history-content .user-image {
+            width: 64px;
+            height: 110px;
+            background-position: -20px -17px;
+            background-repeat: no-repeat;
+            display: block;
+        }
+
+        .kuplafix-chat-history-content .chat-content {
+            position: relative;
+            z-index: 2;
+            padding-left: 32px; /* Make room for avatar */
+            line-height: 1.2;
+        }
+
+        .kuplafix-chat-history-content .user-container-bg {
+            height: 100% !important; /* Fix height issue in relative mode */
+        }
+
+        /* Voice message button (docked inside chat input) */
+        .kuplafix-voice-selector {
+          display: none; /* Hidden by default, only shown inside container */
+        }
+
+        .kuplafix-voice-progress {
+          position: absolute;
+          inset: 0;
+          border-radius: 8px;
+          background: conic-gradient(var(--kuplafix-accent) calc(var(--kuplafix-progress, 0) * 1%), transparent 0);
+          opacity: 0.4;
+          mask: radial-gradient(circle 18px at 50% 50%, transparent 60%, black 61%);
+          pointer-events: none;
+        }
+
+        .kuplafix-voice-fab-label {
+          position: relative;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.4px;
+          z-index: 1;
+          color: #ffffff;
+        }
+
+        /* Voice playback chip inside chat */
+        .kuplafix-voice-chip {
+          display: inline-flex;
+          align-items: center;
+          margin-left: 2px;
+          gap: 12px;
+          border-radius: 16px;
+          background: rgba(15, 20, 25, 0.92);
+          font-family: inherit;
+          font-size: 12px;
+          cursor: default;
+          user-select: none;
+          position: relative;
+          min-width: 220px;
+          transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .kuplafix-voice-chip.playing {
+          border-color: var(--kuplafix-accent);
+          background: rgba(20, 25, 30, 0.96);
+        }
+
+        .kuplafix-voice-play {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          border: none;
+          background: var(--kuplafix-bg);
+          color: var(--kuplafix-primary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+          flex-shrink: 0;
+          padding: 0;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+          scale: 1.05;
+        }
+
+        .kuplafix-voice-play:hover {
+          transform: scale(1.1);
+          background: #ffffff;
+          color: var(--kuplafix-bg);
+        }
+
+        .kuplafix-voice-play svg {
+          width: 14px;
+          height: 14px;
+          fill: currentColor;
+        }
+
+        /* Waveform Styling */
+        .kuplafix-voice-waveform-container {
+          position: relative;
+          flex: 1;
+          height: 24px;
+          display: flex;
+          align-items: center;
+        }
+
+        .kuplafix-voice-waveform-bg,
+        .kuplafix-voice-waveform-fg {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          pointer-events: none;
+        }
+
+        .kuplafix-voice-waveform-bg {
+          opacity: 1;
+          z-index: 1;
+        }
+
+        .kuplafix-voice-waveform-fg {
+          z-index: 2;
+          clip-path: inset(0 100% 0 0);
+          /* No transition here, we use requestAnimationFrame for smoothness */
+        }
+
+        .kuplafix-voice-bar {
+          width: 2px;
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 1px;
+          flex-shrink: 0;
+        }
+
+        .kuplafix-voice-waveform-fg .kuplafix-voice-bar {
+          background: var(--kuplafix-primary);
+        }
+
+        .kuplafix-voice-status {
+          font-size: 11px;
+          color: #ffffff;
+          font-weight: 700;
+          min-width: 35px;
+          opacity: 0.9;
+        }
+
+        .nitro-chat-input-container .nitro-chat-input-control {
+            font-size: 14px;
+            margin-left: 5px;
+            margin-top: 3px;
+            outline: none;
+            background: transparent;
+            border-color: transparent;
+            color: #fff;
+            -webkit-box-shadow: none;
+            box-shadow: none;
+        }
+
+        .nitro-chat-input-container.has-voice-button .nitro-chat-input-control {
+            width: 50% !important;
+        }
+
+        /* Voice button docked inside chat input next to emoji/gif selectors */
+        .nitro-chat-input-container .kuplafix-voice-holder {
+          position: absolute;
+          right: 79px;
+          bottom: 8px;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 5;
+          pointer-events: auto;
+        }
+
+        .nitro-chat-input-container .kuplafix-voice-selector {
+          display: flex !important;
+          position: relative;
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          background: rgba(17, 23, 27, 0.9);
+          border: 1px solid rgba(124, 177, 200, 0.5);
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+          overflow: hidden;
+        }
+
+        .nitro-chat-input-container .kuplafix-voice-selector:active {
+          transform: scale(0.95);
+        }
+
+        .nitro-chat-input-container .kuplafix-voice-selector:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55);
+          border-color: var(--kuplafix-accent);
+        }
+
+        .nitro-chat-input-container .kuplafix-voice-selector.recording {
+          background: rgba(231, 76, 60, 0.9);
+          border-color: #ff5b4d;
+          box-shadow: 0 0 10px rgba(231, 76, 60, 0.4);
+        }
+
+        .nitro-chat-input-container .kuplafix-voice-progress {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          border-radius: 8px;
+          pointer-events: none;
+          background: conic-gradient(var(--kuplafix-accent) calc(var(--kuplafix-progress) * 1%), transparent 0);
+          opacity: 0.3;
+          mask: radial-gradient(circle 18px at 50% 50%, transparent 60%, black 61%);
+        }
+
+        /* Reorderable & Minimizable Cards */
+        .kuplafix-features-list {
+          display: flex;
+          flex-direction: column;
+          margin-bottom: 4px;
+        }
+
+        .kuplafix-feature-card {
+          transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s;
+        }
+
+        .kuplafix-feature-card.dragging {
+          opacity: 0.5;
+          border: 1px dashed var(--kuplafix-accent);
+        }
+
+        .kuplafix-feature-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding-bottom: 0;
+          min-height: 26px;
+        }
+
+        .kuplafix-drag-handle {
+          color: #546e7a;
+          cursor: grab;
+          font-size: 18px;
+          line-height: 1;
+          user-select: none;
+          padding: 0 4px;
+          display: flex;
+          align-items: center;
+        }
+
+
+        .kuplafix-drag-handle:active {
+          cursor: grabbing;
+        }
+
+        .kuplafix-feature-title-row {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .kuplafix-header-controls {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .kuplafix-minimize-btn {
+          background: transparent;
+          border: none;
+          color: #cbd6dc;
+          cursor: pointer;
+          font-size: 10px;
+          transition: transform 0.2s;
+          padding: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .kuplafix-minimize-btn:hover {
+          color: #fff;
+        }
+
+        .kuplafix-feature-card.collapsed .kuplafix-minimize-btn {
+          transform: rotate(-90deg);
+        }
+
+        .kuplafix-feature-content {
+          display: block;
+          margin-top: 0;
+          overflow: hidden;
+        }
+
+        .kuplafix-feature-card.collapsed .kuplafix-feature-content {
+          display: none;
+        }
+
+        .kuplafix-feature-actions-row {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 4px;
+          margin-bottom: 4px;
+          padding-right: 2px;
+        }
+
+        /* Add margin to body if it follows description directly (no settings button) */
+        .kuplafix-feature-description + .kuplafix-feature-body {
+          margin-top: 12px;
+        }
+      `;
