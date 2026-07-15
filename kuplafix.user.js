@@ -587,7 +587,7 @@
       });
     },
 
-    injectBaseStyles() {
+    injectBaseStyles(targetDocs = null) {
       const styleContent = `
         /* kuplafix v${SCRIPT_VERSION} base styles */
 
@@ -2089,10 +2089,12 @@
         }
       `;
 
-      const docs = [];
-      const iframeDoc = DOM.getIframeDoc();
-      if (iframeDoc) docs.push(iframeDoc);
-      docs.push(document);
+      const docs = targetDocs ? Array.from(targetDocs) : [];
+      if (!targetDocs) {
+        const iframeDoc = DOM.getIframeDoc();
+        if (iframeDoc) docs.push(iframeDoc);
+        docs.push(document);
+      }
 
       docs.forEach((docRef) => {
         const existing = docRef.getElementById('kuplafix-styles');
@@ -5625,6 +5627,12 @@
         </body></html>`);
       popup.document.close();
 
+      // Do not rely on styles being discoverable in the opener. Bookmarklet mode
+      // can create the popout from a different browsing context than the document
+      // that currently owns #kuplafix-styles, so inject our complete bundle into
+      // the new document explicitly.
+      Styles.injectBaseStyles([popup.document]);
+
       // The in-game history uses both Nitro's chat-bubble/utility CSS and
       // KuplaFix's overrides. Copy them in source order so the lightweight
       // popout renders exactly like the history inside the client.
@@ -5673,6 +5681,7 @@
       if (!sourceDoc?.head || !popoutDoc?.head) return;
 
       sourceDoc.head.querySelectorAll('link[rel~="stylesheet"], style').forEach((source) => {
+        if (source.id === 'kuplafix-styles') return;
         const clone = source.cloneNode(true);
         if (clone.tagName === 'LINK') {
           try { clone.href = source.href; } catch (_) { }
