@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         kuplafix
 // @namespace    kuplafix
-// @version      2.1.6
+// @version      2.2.0
 // @description  kuplahotelli UI fixes & enhancements (ScriptCat edition)
 // @author       res
 // @match        *://kuplahotelli.com/game/nitro*
@@ -66,7 +66,7 @@
 
   // Keep startup quiet; use `log` for controlled output.
   const SCRIPT_NAME = 'kuplafix';
-  const SCRIPT_VERSION = '2.1.6';
+  const SCRIPT_VERSION = '2.2.0';
   const CONFIG_KEY = 'kuplafix_config';
   const DEBUG_ENABLED = false;
 
@@ -156,6 +156,10 @@
   // Configuration Management
   // ─────────────────────────────────────────────────────────────────
   const defaultConfig = {
+    welcomeSummaryEnabled: true,
+    welcomeSummaryPosition: null,
+    welcomeSummaryStaffUsernames: ['Laatikko', 'Nappi', 'craimsson'],
+    welcomeSummaryMinAwayMinutes: 60,
     browserEnabled: false,
     onlineCountEnabled: true,
     onlineCountInterval: 60000,
@@ -199,7 +203,7 @@
     ignoredOutgoingHeaders: '[]', // JSON string of header IDs
     ignoredIncomingHeaders: '[]', // JSON string of header IDs
     acceptAllMacroNotifications: false,
-    featureOrder: ['online-count', 'gif-blocker', 'bubble-alerts', 'chat-history', 'game-mode', 'room-lighting', 'livekit', 'browser', 'voice-messages', 'renderer-config', 'packet-tools'],
+    featureOrder: ['welcome-summary', 'online-count', 'gif-blocker', 'bubble-alerts', 'chat-history', 'game-mode', 'room-lighting', 'livekit', 'browser', 'voice-messages', 'renderer-config', 'packet-tools'],
     collapsedFeatures: {},
   };
 
@@ -594,7 +598,7 @@
         :root {
           --kuplafix-primary: #176f8f;
           --kuplafix-accent: #7cb1c8;
-          --kuplafix-bg: rgba(31, 41, 46, 0.95);
+          --kuplafix-bg: rgba(31, 41, 46, 0.82);
           --kuplafix-border: #364951;
         }
 
@@ -638,17 +642,18 @@
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          background: var(--kuplafix-bg);
+          background: rgba(31, 41, 46, 0.78);
+          backdrop-filter: blur(6px);
           border: 1px solid var(--kuplafix-border);
           border-radius: 8px;
           color: white;
-          padding: 15px;
-          width: 92%;
-          max-width: 440px;
+          padding: 10px;
+          width: 90%;
+          max-width: 390px;
           z-index: 99999;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-          max-height: 80vh;
+          max-height: 76vh;
           overflow-y: auto;
         }
 
@@ -656,11 +661,11 @@
           display: flex;
           justify-content: space-between;
           align-items: center; /* center vertically so ascii and close btn align */
-          gap: 10px;
-          margin-bottom: 12px;
+          gap: 7px;
+          margin-bottom: 7px;
           cursor: move;
           position: relative; /* anchor close button */
-          padding-right: 60px; /* leave space for the close button hovering top-right */
+          padding-right: 48px; /* leave space for the close button hovering top-right */
         }
 
         /* Render ASCII header as plain preformatted text without a separate "boxed" background
@@ -670,7 +675,7 @@
           flex: 1 1 auto;
           display: block;
           font-family: 'Courier New', Courier, monospace;
-          font-size: 6px; /* smaller so full ascii fits without clipping */
+          font-size: 5px; /* smaller so full ascii fits without clipping */
           line-height: 0.95;
           color: var(--kuplafix-accent);
           background: transparent;
@@ -687,15 +692,15 @@
         /* Place the close button as a hoverable control in the top-right corner of the menu */
         .kuplafix-close-btn {
           position: absolute;
-          right: 8px;
+          right: 4px;
           background: transparent;
           color: #ffffff;
           border: 1px solid rgba(54, 73, 81, 0.7);
-          padding: 6px 10px;
+          padding: 4px 8px;
           border-radius: 4px;
           cursor: pointer;
           transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
-          font-size: 14px;
+          font-size: 12px;
           z-index: 100001;
         }
 
@@ -706,29 +711,29 @@
         }
 
         .kuplafix-menu-subtitle {
-          margin: 0 0 18px 0;
-          font-size: 13px;
+          margin: 0 0 9px 0;
+          font-size: 11px;
           color: #a9c0cc;
           letter-spacing: 0.08em;
           text-transform: uppercase;
         }
 
         .kuplafix-feature-card {
-          background: rgba(17, 23, 27, 0.7);
-          border: 1px solid rgba(54, 73, 81, 0.7);
-          border-radius: 8px;
-          padding: 16px;
+          background: rgba(17, 23, 27, 0.5);
+          border: 1px solid rgba(54, 73, 81, 0.58);
+          border-radius: 6px;
+          padding: 9px;
           display: flex;
           flex-direction: column;
-          gap: 12px;
-          margin-bottom: 4px;
+          gap: 7px;
+          margin-bottom: 3px;
         }
 
         .kuplafix-feature-header {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          gap: 12px;
+          gap: 8px;
         }
 
         .kuplafix-feature-actions-top {
@@ -742,23 +747,23 @@
         }
 
         .kuplafix-feature-title {
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 600;
           color: #ffffff;
           margin: 0;
         }
 
         .kuplafix-feature-description {
-          font-size: 12px;
+          font-size: 11px;
           color: #cbd6dc;
-          margin-top: 4px;
-          line-height: 1.4;
+          margin-top: 2px;
+          line-height: 1.3;
         }
 
         .kuplafix-feature-body {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 7px;
         }
 
         .kuplafix-feature-status-row {
@@ -769,7 +774,7 @@
         }
 
         .kuplafix-feature-status {
-          font-size: 12px;
+          font-size: 11px;
           color: #9fb6c1;
         }
 
@@ -828,10 +833,10 @@
           background: var(--kuplafix-primary);
           color: white;
           border: none;
-          padding: 6px 12px;
+          padding: 4px 8px;
           border-radius: 4px;
           cursor: pointer;
-          font-size: 12px;
+          font-size: 11px;
           transition: background 0.2s;
         }
 
@@ -843,9 +848,9 @@
           background: transparent;
           color: var(--kuplafix-accent);
           border: 1px solid var(--kuplafix-border);
-          padding: 6px 12px;
+          padding: 4px 8px;
           border-radius: 4px;
-          font-size: 12px;
+          font-size: 11px;
           cursor: pointer;
           transition: all 0.2s ease;
         }
@@ -864,10 +869,10 @@
 
         .kuplafix-feature-options-panel {
           display: none;
-          background: rgba(12, 18, 22, 0.7);
-          border: 1px solid rgba(54, 73, 81, 0.7);
+          background: rgba(12, 18, 22, 0.5);
+          border: 1px solid rgba(54, 73, 81, 0.58);
           border-radius: 6px;
-          padding: 12px;
+          padding: 8px;
         }
 
         .kuplafix-feature-options-panel.kuplafix-open {
@@ -2087,6 +2092,98 @@
         .kuplafix-feature-description + .kuplafix-feature-body {
           margin-top: 12px;
         }
+
+        .kuplafix-welcome-card {
+          position: fixed;
+          z-index: 1000002;
+          top: 56px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: min(760px, calc(100vw - 24px));
+          max-height: min(84vh, 760px);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          color: #f4f7f8;
+          background: rgba(20, 25, 30, 0.85);
+          border: 1px solid #364951;
+          border-radius: 8px;
+          box-shadow: 0 16px 42px rgba(0, 0, 0, .55);
+          font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        .kuplafix-welcome-card[hidden] { display: none !important; }
+        .kuplafix-welcome-head { display:flex; flex:none; align-items:center; justify-content:space-between; gap:12px; padding:13px 15px; border-bottom:1px solid #364951; background:#141b1f; cursor:move; user-select:none; }
+        .kuplafix-welcome-brand { margin:0 0 3px; color:#7cb1c8; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:lowercase; }
+        .kuplafix-welcome-title { margin:0; font-size:18px; line-height:1.2; }
+        .kuplafix-welcome-visit { margin-top:4px; color:#9fb1b9; font-size:11px; }
+        .kuplafix-welcome-close { align-self:flex-start; border:0; background:transparent; color:#9fb1b9; cursor:pointer; font-size:18px; }
+        .kuplafix-welcome-body { overflow:auto; }
+        .kuplafix-welcome-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); column-gap:28px; row-gap:0; padding:4px 18px 0; }
+        .kuplafix-welcome-section { min-width:0; padding:15px 0; border-bottom:1px solid #223138; }
+        .kuplafix-welcome-section h3 { margin:0 0 9px; color:#7cb1c8; font-size:11px; text-transform:uppercase; letter-spacing:.07em; }
+        .kuplafix-welcome-list { display:flex; flex-direction:column; gap:6px; }
+        .kuplafix-welcome-row { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:24px; font-size:12px; }
+        .kuplafix-welcome-row-main { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .kuplafix-welcome-muted { color:#9fb1b9; }
+        .kuplafix-welcome-pill { flex:none; color:#9fb1b9; font-size:10px; }
+        .kuplafix-welcome-action { flex:none; border:1px solid #364951; border-radius:5px; padding:4px 7px; color:#f4f7f8; background:#1f292e; cursor:pointer; font-size:10px; }
+        .kuplafix-welcome-action:hover { border-color:#7cb1c8; }
+        .kuplafix-welcome-rooms-section, .kuplafix-welcome-friends-section { align-self:start; }
+        .kuplafix-welcome-staff-section { grid-column:1; align-self:start; }
+        .kuplafix-welcome-room-list { display:grid; grid-template-columns:1fr; gap:7px; }
+        @keyframes kuplafix-welcome-room-bubble-rise { 0% { opacity:0; transform:translate3d(0,12px,0) scale(.72); } 12% { opacity:var(--kf-bubble-opacity,.24); } 82% { opacity:var(--kf-bubble-opacity,.24); } 100% { opacity:0; transform:translate3d(var(--kf-bubble-drift,0),-112px,0) scale(1.12); } }
+        .kuplafix-welcome-room { position:relative; display:flex; align-items:center; gap:11px; min-width:0; min-height:90px; overflow:hidden; padding:5px; border:1px solid var(--kf-room-border,#2a3a41); border-radius:8px; background:var(--kf-room-tint,#182126); cursor:pointer; text-align:left; color:#f4f7f8; transition:border-color .14s ease,box-shadow .14s ease,filter .14s ease,transform .14s ease; }
+        .kuplafix-welcome-room > *:not(.kuplafix-welcome-room-bubbles) { position:relative; z-index:1; }
+        .kuplafix-welcome-room-bubbles { position:absolute; z-index:0; inset:0; overflow:hidden; pointer-events:none; }
+        .kuplafix-welcome-room-bubble { position:absolute; left:var(--kf-bubble-x,50%); bottom:-10px; width:var(--kf-bubble-size,5px); height:var(--kf-bubble-size,5px); border:1px solid rgba(180,224,240,.58); border-radius:50%; opacity:0; box-shadow:inset 1px 1px 1px rgba(255,255,255,.2); animation:kuplafix-welcome-room-bubble-rise var(--kf-bubble-duration,8s) linear infinite; animation-delay:var(--kf-bubble-delay,0s); will-change:transform,opacity; }
+        @media (prefers-reduced-motion:reduce) { .kuplafix-welcome-room-bubble { animation:none; display:none; } }
+        .kuplafix-welcome-room:hover { border-color:var(--kf-room-accent,#7cb1c8); filter:brightness(1.1); }
+        .kuplafix-welcome-room.kuplafix-room-highlight { z-index:2; border-color:var(--kf-room-accent,#7cb1c8); box-shadow:0 0 0 2px color-mix(in srgb,var(--kf-room-accent,#7cb1c8) 55%,transparent),0 5px 14px rgba(0,0,0,.35); filter:brightness(1.18); transform:translateX(3px); }
+        .kuplafix-welcome-room-thumb { position:relative; flex:0 0 80px; width:80px; height:80px; overflow:hidden; border-radius:7px; background:#27343a; box-shadow:inset 0 0 0 1px rgba(255,255,255,.08); }
+        .kuplafix-welcome-room-thumb img { position:absolute; z-index:1; inset:0; width:100%; height:100%; object-fit:none; image-rendering:pixelated; }
+        .kuplafix-welcome-room-thumb::after { content:attr(data-fallback); position:absolute; inset:0; display:grid; place-items:center; color:#7cb1c8; font-size:22px; font-weight:800; background:linear-gradient(145deg,rgba(124,177,200,.16),rgba(13,18,21,.35)); }
+        .kuplafix-welcome-room-thumb[data-loaded="true"]::after { display:none; }
+        .kuplafix-welcome-room-copy { min-width:0; display:flex; flex-direction:column; gap:5px; }
+        .kuplafix-welcome-room-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:700; }
+        .kuplafix-welcome-room-count { display:flex; align-items:center; gap:4px; color:#b7c6cc; font-size:10px; }
+        .kuplafix-welcome-room-friends { display:flex; flex-wrap:wrap; align-items:center; gap:2px; min-height:27px; margin-top:1px; padding-left:2px; }
+        .kuplafix-welcome-room-friend-head { width:26px; height:26px; border:1px solid var(--kf-room-border,#182126); border-radius:50%; background-color:#243239; background-position:center 22%; background-repeat:no-repeat; background-size:auto; image-rendering:auto; box-shadow:0 1px 3px rgba(0,0,0,.45); }
+        .kuplafix-welcome-friend-groups { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:0; }
+        .kuplafix-welcome-friend-room-blob, .kuplafix-welcome-friend-list { display:contents; }
+        .kuplafix-welcome-friend { aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-width:0; min-height:0; padding:6px 4px; border:1px solid var(--kf-room-border,#2a3a41); border-radius:9px; color:#f4f7f8; background:var(--kf-room-tint,#182126); cursor:pointer; text-align:center; }
+        .kuplafix-welcome-friend:not(button) { cursor:default; }
+        .kuplafix-welcome-friend:hover { border-color:var(--kf-room-accent,#7cb1c8); filter:brightness(1.1); }
+        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend { border:0 solid var(--kf-room-border,#2a3a41); border-radius:0; background:var(--kf-room-tint,#182126); box-shadow:none; }
+        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-edge-top { border-top-width:1px; }
+        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-edge-right { border-right-width:1px; }
+        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-edge-bottom { border-bottom-width:1px; }
+        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-edge-left { border-left-width:1px; }
+        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-corner-tl { border-top-left-radius:8px; }
+        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-corner-tr { border-top-right-radius:8px; }
+        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-corner-bl { border-bottom-left-radius:8px; }
+        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-corner-br { border-bottom-right-radius:8px; }
+        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-blob-gap-left { margin-left:5px; }
+        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-blob-gap-top { margin-top:5px; }
+        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend:hover { background:rgba(255,255,255,.07); filter:none; }
+        .kuplafix-welcome-avatar { flex:0 0 40px; width:40px; height:40px; overflow:hidden; border-radius:50%; background-color:#243239; background-position:center 28%; background-repeat:no-repeat; background-size:auto; image-rendering:pixelated; }
+        .kuplafix-welcome-avatar[data-fallback]::after { content:attr(data-fallback); display:grid; place-items:center; width:100%; height:100%; color:#7cb1c8; font-weight:800; }
+        .kuplafix-welcome-friend-copy { min-width:0; width:100%; display:flex; flex-direction:column; align-items:center; gap:1px; }
+        .kuplafix-welcome-friend-name, .kuplafix-welcome-friend-room { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .kuplafix-welcome-friend-name { font-size:11px; font-weight:700; }
+        .kuplafix-welcome-friend-room { color:#b7c6cc; font-size:9px; }
+        .kuplafix-welcome-friend-last { color:#748991; font-size:8px; }
+        .kuplafix-welcome-chat { grid-column:1 / -1; padding:11px 0; }
+        .kuplafix-welcome-chat h3 { margin-bottom:6px; font-size:9px; opacity:.8; }
+        .kuplafix-welcome-chat-scroll { max-height:145px; overflow:auto; padding:6px; border:1px solid #2a3a41; border-radius:6px; background:#11181b; font-family:'Ubuntu','Segoe UI',sans-serif; font-size:14px; font-weight:500; }
+        .kuplafix-welcome-chat-scroll * { font-family:'Ubuntu','Segoe UI',sans-serif !important; }
+        .kuplafix-welcome-chat-scroll .d-flex { margin-bottom:2px; transform-origin:left center; }
+        .kuplafix-welcome-footer { display:flex; flex:none; justify-content:flex-end; flex-wrap:wrap; gap:8px; padding:11px 15px; border-top:1px solid #364951; background:#141b1f; }
+        .kuplafix-welcome-footer button { min-height:34px; border:1px solid #364951; border-radius:6px; padding:0 12px; color:#f4f7f8; background:#1f292e; cursor:pointer; font-size:11px; font-weight:700; }
+        .kuplafix-welcome-footer button:hover { border-color:#7cb1c8; }
+        .kuplafix-welcome-footer button:last-child { border-color:#176f8f; background:#176f8f; }
+        @media (max-width: 620px) { .kuplafix-welcome-grid { grid-template-columns:1fr; } .kuplafix-welcome-friend-list { grid-template-columns:repeat(3, minmax(0, 1fr)); } .kuplafix-welcome-staff-section { grid-column:auto; } }
+
+        .kuplafix-menu > .kuplafix-menu-footer { margin-top:10px !important; padding-top:10px !important; }
       `;
 
       const docs = targetDocs ? Array.from(targetDocs) : [];
@@ -2327,6 +2424,26 @@
 
       // Feature Definitions
       const features = {
+        'welcome-summary': {
+          title: 'kirjautumisen yhteenveto',
+          description: 'näytä sisään tullessa huoneet, kaverit, aiemmat viestit ja paikalla oleva henkilökunta.',
+          toggleId: 'kf-welcome-summary',
+          configKey: 'welcomeSummaryEnabled',
+          settingsBtn: `<button class="kuplafix-btn-secondary" id="kuplafix-options-welcome-summary">Asetukset</button><button class="kuplafix-btn-secondary" id="kuplafix-open-welcome-summary">Avaa nyt</button>`,
+          content: `
+            <div class="kuplafix-feature-options-panel" id="kuplafix-panel-welcome-summary">
+              <form class="kuplafix-options-form" id="kuplafix-form-welcome-summary">
+                <label for="kuplafix-welcome-staff-input" class="kuplafix-options-label">Henkilökunnan käyttäjänimet (pilkulla tai rivinvaihdolla)</label>
+                <textarea id="kuplafix-welcome-staff-input" class="kuplafix-options-input" rows="3" spellcheck="false"></textarea>
+                <label for="kuplafix-welcome-away-input" class="kuplafix-options-label">Näytä automaattisesti, kun edellisestä käynnistä on vähintään</label>
+                <div class="kuplafix-options-row">
+                  <input type="number" min="0" step="0.5" id="kuplafix-welcome-away-input" class="kuplafix-options-input kuplafix-inline-number">
+                  <span class="kuplafix-feature-status">tuntia (0 = aina)</span>
+                </div>
+              </form>
+            </div>
+            <div class="kuplafix-feature-status" data-role="welcome-summary-status">Tietoja säilytetään käyttäjäkohtaisesti. Kaikkien käyttäjien raakaa sijaintilistaa ei tallenneta.</div>`
+        },
         'online-count': {
           title: 'kävijämäärä chatboxissa',
           description: 'Näytä monta hahmoa on paikalla chatboxissa ja päivitä lukema automaattisesti.',
@@ -2622,7 +2739,7 @@
       };
 
       // Generate HTML based on order
-      let featureOrder = config.get('featureOrder') || ['online-count', 'gif-blocker', 'bubble-alerts', 'chat-history', 'room-lighting', 'livekit', 'browser', 'voice-messages', 'renderer-config', 'packet-tools'];
+      let featureOrder = config.get('featureOrder') || defaultConfig.featureOrder;
 
       // Ensure all defined features are in the list (in case config is stale)
       const definedFeatures = Object.keys(features);
@@ -3242,6 +3359,45 @@
       });
 
       // Chat History handlers
+      bindFeatureToggle('kf-welcome-summary', 'welcomeSummaryEnabled', 'Kirjautumisen yhteenveto');
+      const welcomeOptionsButton = menu.querySelector('#kuplafix-options-welcome-summary');
+      const welcomeOptionsPanel = menu.querySelector('#kuplafix-panel-welcome-summary');
+      const welcomeStaffInput = menu.querySelector('#kuplafix-welcome-staff-input');
+      const welcomeAwayInput = menu.querySelector('#kuplafix-welcome-away-input');
+      const welcomeStatus = menu.querySelector('[data-role="welcome-summary-status"]');
+      const updateWelcomeStatus = () => {
+        const count = LoginWelcome.getStaffUsernames().length;
+        const minutes = LoginWelcome.getMinAwayMinutes();
+        const awayText = minutes ? `${minutes / 60} h` : 'aina';
+        if (welcomeStatus) welcomeStatus.textContent = `${count} henkilökunnan nimeä · automaattinen yhteenveto: ${awayText}`;
+      };
+      if (welcomeStaffInput) welcomeStaffInput.value = LoginWelcome.getStaffUsernames().join('\n');
+      if (welcomeAwayInput) welcomeAwayInput.value = String(LoginWelcome.getMinAwayMinutes() / 60);
+      welcomeOptionsButton?.addEventListener('click', () => {
+        welcomeOptionsPanel?.classList.toggle('kuplafix-open');
+        welcomeOptionsButton.classList.toggle('kuplafix-active', welcomeOptionsPanel?.classList.contains('kuplafix-open'));
+      });
+      welcomeStaffInput?.addEventListener('change', () => {
+        const names = LoginWelcome.parseStaffUsernames(welcomeStaffInput.value);
+        config.set('welcomeSummaryStaffUsernames', names);
+        welcomeStaffInput.value = names.join('\n');
+        LoginWelcome.rebuildDerivedData();
+        updateWelcomeStatus();
+      });
+      welcomeAwayInput?.addEventListener('change', () => {
+        const hours = Math.max(0, Number.parseFloat(welcomeAwayInput.value) || 0);
+        config.set('welcomeSummaryMinAwayMinutes', Math.round(hours * 60));
+        welcomeAwayInput.value = String(LoginWelcome.getMinAwayMinutes() / 60);
+        updateWelcomeStatus();
+      });
+      updateWelcomeStatus();
+      menu.querySelector('#kuplafix-open-welcome-summary')?.addEventListener('click', () => {
+        this.configMenu?.remove();
+        this.configMenu = null;
+        LoginWelcome.requestUsersOn();
+        LoginWelcome.open(true);
+      });
+
       bindFeatureToggle('kf-chat-history', 'chatHistoryCacheEnabled', 'Chat-historia', (enabled) => {
         if (enabled) {
           ChatHistoryCache.init();
@@ -7454,6 +7610,7 @@
       incoming: new Map(), // Map<header, Set<callback>>
       outgoing: new Map(), // Map<header, Set<callback>>
     },
+    _incomingInterceptors: new Map(),
 
     // Helper: Get ID from header entry (supports both 3492 and [3492, 'IISI'] formats)
     _getId(entry) { return Array.isArray(entry) ? entry[0] : entry; },
@@ -8588,7 +8745,7 @@
 
           // Hook incoming
           ws.addEventListener('message', (event) => {
-            self.logPacket('IN', event.data);
+            if (self.logPacket('IN', event.data)) event.stopImmediatePropagation();
           });
         }
 
@@ -8651,7 +8808,7 @@
         }
 
         if (buffer) {
-          this.processBuffer(direction, buffer);
+          return this.processBuffer(direction, buffer);
         }
       } catch (e) {
         console.error('Error logging packet', e);
@@ -8678,6 +8835,15 @@
         // Add to history
         this.addToHistory(direction, header, length, buffer);
 
+        let suppress = false;
+        if (direction === 'IN') {
+          const interceptors = this._incomingInterceptors.get(String(header));
+          interceptors?.forEach((callback) => {
+            try { suppress = callback(header, buffer) === true || suppress; }
+            catch (error) { log.warn(`Packet interceptor failed for [${header}]`, error); }
+          });
+        }
+
         if (this.loggingEnabled) {
           // Find header name
           let headerName = 'Unknown';
@@ -8696,7 +8862,9 @@
           const hex = Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join(' ');
           console.log(`%c[PacketManager] ${direction} HEX: ${hex}`, 'color: #888');
         }
+        return suppress;
       }
+      return false;
     },
 
     checkMacros(direction, header, buffer) {
@@ -9479,6 +9647,17 @@
       }
     },
 
+    sendSilent(header, ...values) {
+      if (!this.socket || this.socket.readyState !== 1) return false;
+      try {
+        this.socket.send(this.createPacket(header, values));
+        return true;
+      } catch (error) {
+        log.warn(`PacketManager: silent send [${header}] failed`, error);
+        return false;
+      }
+    },
+
     // Public API: Inject to Client (Simulate Incoming)
     inject(header, ...values) {
       if (!this.socket) {
@@ -9556,6 +9735,17 @@
      */
     onIncoming(header, callback) {
       return this._addListener('incoming', header, callback);
+    },
+
+    interceptIncoming(header, callback) {
+      const key = String(header);
+      if (!this._incomingInterceptors.has(key)) this._incomingInterceptors.set(key, new Set());
+      this._incomingInterceptors.get(key).add(callback);
+      return () => {
+        const callbacks = this._incomingInterceptors.get(key);
+        callbacks?.delete(callback);
+        if (callbacks?.size === 0) this._incomingInterceptors.delete(key);
+      };
     },
 
     /**
@@ -12316,6 +12506,743 @@
     },
   };
 
+  // Module: Login welcome summary
+  const LoginWelcome = {
+    STORAGE_KEY: 'kuplafix_welcome_state_v1',
+    DEFAULT_STAFF_USERNAMES: Object.freeze(['Laatikko', 'Nappi', 'craimsson']),
+    ROOM_TINTS: Object.freeze([
+      ['rgba(35,82,103,.42)', 'rgba(92,168,199,.58)', '#79c5e2'],
+      ['rgba(74,55,105,.42)', 'rgba(151,115,197,.58)', '#b99ae2'],
+      ['rgba(44,91,70,.42)', 'rgba(100,177,137,.58)', '#85d4aa'],
+      ['rgba(105,76,38,.42)', 'rgba(194,146,76,.58)', '#e2b876'],
+      ['rgba(102,52,56,.42)', 'rgba(190,104,111,.58)', '#dc8e94'],
+      ['rgba(39,91,91,.42)', 'rgba(83,174,174,.58)', '#73cece'],
+      ['rgba(99,51,84,.42)', 'rgba(187,102,155,.58)', '#dc8fbd']
+    ]),
+    account: null,
+    previous: null,
+    friends: new Map(),
+    usersOnline: [],
+    rooms: [],
+    staffOnline: [],
+    card: null,
+    requestPendingUntil: 0,
+    lastRawUserson: '',
+    sessionStartedAt: Date.now(),
+    _initialized: false,
+    _autoOpened: false,
+    _usersOnObserver: null,
+    _navigatorObserver: null,
+    _navigatorDoc: null,
+    roomThumbnails: new Map(),
+
+    reader(buffer) {
+      const view = new DataView(buffer);
+      let offset = 6;
+      const require = (size) => {
+        if (offset + size > view.byteLength) throw new RangeError('Truncated packet');
+      };
+      return {
+        int() { require(4); const value = view.getInt32(offset); offset += 4; return value; },
+        short() { require(2); const value = view.getInt16(offset); offset += 2; return value; },
+        bool() { require(1); return view.getUint8(offset++) !== 0; },
+        string() {
+          require(2);
+          const length = view.getUint16(offset); offset += 2; require(length);
+          const value = new TextDecoder().decode(new Uint8Array(buffer, offset, length));
+          offset += length;
+          return value;
+        },
+        get remaining() { return view.byteLength - offset; }
+      };
+    },
+
+    init() {
+      if (this._initialized) return;
+      this._initialized = true;
+      PacketManager.onIncoming(2725, (_header, buffer) => this.handleUserInfo(buffer));
+      PacketManager.onIncoming(3130, (_header, buffer) => this.handleFriends(buffer));
+      PacketManager.onIncoming(2800, (_header, buffer) => this.handleFriendUpdates(buffer));
+      PacketManager.onIncoming(758, () => this.handleRoomOpen());
+      PacketManager.interceptIncoming(3801, (_header, buffer) => this.handleGenericAlert(buffer));
+      window.addEventListener('pagehide', () => this.saveSnapshot());
+      window.addEventListener('beforeunload', () => this.saveSnapshot());
+    },
+
+    handleUserInfo(buffer) {
+      try {
+        const r = this.reader(buffer);
+        const id = r.int();
+        const username = r.string();
+        if (!id || !username) return;
+        this.account = { id, username };
+        this.previous = this.loadAccountState();
+        this.refreshCard();
+      } catch (error) {
+        log.warn('Welcome summary: could not parse user data', error);
+      }
+    },
+
+    readFriend(r) {
+      const friend = {
+        id: r.int(), username: r.string(), gender: r.int(), online: r.bool(), inRoom: r.bool(),
+        look: r.string(), category: r.int(), motto: r.string(), lastSeen: r.string(), realName: r.string(),
+        offlineMessaging: r.bool(), followingAllowed: r.bool(), categoryOpen: r.bool(), relation: r.short()
+      };
+      return friend;
+    },
+
+    handleFriends(buffer) {
+      try {
+        const r = this.reader(buffer);
+        r.int(); r.int();
+        const count = Math.max(0, Math.min(r.int(), 5000));
+        for (let index = 0; index < count; index++) {
+          const friend = this.readFriend(r);
+          this.friends.set(friend.id, friend);
+        }
+        this.rebuildDerivedData();
+      } catch (error) {
+        log.warn('Welcome summary: could not parse friend list', error);
+      }
+    },
+
+    handleFriendUpdates(buffer) {
+      try {
+        const r = this.reader(buffer);
+        const categoryCount = Math.max(0, Math.min(r.int(), 200));
+        for (let index = 0; index < categoryCount; index++) { r.int(); r.string(); }
+        const count = Math.max(0, Math.min(r.int(), 5000));
+        for (let index = 0; index < count; index++) {
+          const action = r.int();
+          const id = r.int();
+          if (action === -1) this.friends.delete(id);
+          else {
+            // readFriend begins with the id, which the update packet already supplied.
+            const friend = {
+              id, username: r.string(), gender: r.int(), online: r.bool(), inRoom: r.bool(),
+              look: r.string(), category: r.int(), motto: r.string(), lastSeen: r.string(), realName: r.string(),
+              offlineMessaging: r.bool(), followingAllowed: r.bool(), categoryOpen: r.bool(), relation: r.short()
+            };
+            this.friends.set(id, friend);
+          }
+        }
+        this.rebuildDerivedData();
+      } catch (error) {
+        log.warn('Welcome summary: could not parse friend update', error);
+      }
+    },
+
+    handleRoomOpen() {
+      if (!config.get('welcomeSummaryEnabled') || this._autoOpened) return;
+      this._autoOpened = true;
+      this.observeNavigatorAssets();
+      const lastSeenAt = Number(this.previous?.lastSeenAt);
+      const minAwayMs = this.getMinAwayMinutes() * 60 * 1000;
+      if (Number.isFinite(lastSeenAt) && minAwayMs > 0 && Date.now() - lastSeenAt < minAwayMs) {
+        log.debug('Welcome summary skipped: previous visit is newer than the configured threshold');
+        return;
+      }
+      setTimeout(() => this.requestUsersOn(), 900);
+      setTimeout(() => this.open(), 4300);
+    },
+
+    parseStaffUsernames(value) {
+      const source = Array.isArray(value) ? value : String(value || '').split(/[\n,;]+/);
+      const seen = new Set();
+      return source.map(name => String(name).trim()).filter((name) => {
+        const key = name.toLocaleLowerCase('fi');
+        if (!name || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }).slice(0, 100);
+    },
+
+    getStaffUsernames() {
+      const configured = config.get('welcomeSummaryStaffUsernames');
+      return Array.isArray(configured) ? this.parseStaffUsernames(configured) : [...this.DEFAULT_STAFF_USERNAMES];
+    },
+
+    getMinAwayMinutes() {
+      const value = Number(config.get('welcomeSummaryMinAwayMinutes'));
+      return Number.isFinite(value) ? Math.max(0, Math.round(value)) : 60;
+    },
+
+    requestUsersOn() {
+      this.requestPendingUntil = Date.now() + 5000;
+      this.observeUsersOnAlert();
+      const sent = PacketManager.sendSilent(1314,
+        PacketManager.types.String(':userson'),
+        PacketManager.types.Int(0),
+        PacketManager.types.Int(0));
+      if (!sent) this.requestPendingUntil = 0;
+      return sent;
+    },
+
+    observeUsersOnAlert() {
+      this._usersOnObserver?.disconnect();
+      const doc = this.targetDoc();
+      if (!doc?.body) return;
+      const consumeVisibleAlert = () => {
+        if (Date.now() > this.requestPendingUntil) {
+          this._usersOnObserver?.disconnect();
+          this._usersOnObserver = null;
+          return false;
+        }
+        const alert = [...doc.querySelectorAll('.nitro-alert-motd')].find((element) => {
+          const text = element.querySelector('.notification-text')?.textContent || '';
+          return /Paikalla olevat pelaajat/i.test(text);
+        });
+        if (!alert) return false;
+        const spans = [...alert.querySelectorAll('.notification-text span')];
+        const text = spans.length ? spans.map(span => span.textContent || '').join('\n') : (alert.querySelector('.notification-text')?.innerText || '');
+        this.consumeUsersOnText(text);
+        const closeButton = [...alert.querySelectorAll('.btn, button, [role="button"]')].find(element => element.textContent?.trim() === 'Sulje');
+        closeButton?.click();
+        this._usersOnObserver?.disconnect();
+        this._usersOnObserver = null;
+        return true;
+      };
+      if (consumeVisibleAlert()) return;
+      this._usersOnObserver = new MutationObserver(consumeVisibleAlert);
+      this._usersOnObserver.observe(doc.body, { childList: true, subtree: true });
+      setTimeout(consumeVisibleAlert, 5100);
+    },
+
+    readFirstString(buffer) {
+      try { return this.reader(buffer).string(); }
+      catch (_) { return ''; }
+    },
+
+    handleGenericAlert(buffer) {
+      if (Date.now() > this.requestPendingUntil) return false;
+      const text = this.readFirstString(buffer);
+      if (!text) return false;
+      // The first generic alert immediately following our explicit command is its response.
+      this.consumeUsersOnText(text);
+      return true;
+    },
+
+    consumeUsersOnText(text) {
+      this.requestPendingUntil = 0;
+      this.lastRawUserson = text;
+      this.usersOnline = this.parseUsersOn(text);
+      this.rebuildDerivedData();
+      this.saveSnapshot();
+      this.open();
+    },
+
+    parseUsersOn(text) {
+      const output = [];
+      const seen = new Set();
+      const add = (username, userId, roomName, roomId) => {
+        const cleanName = String(username || '').trim().replace(/^[@#\-\s]+/, '');
+        const cleanRoom = String(roomName || '').trim().replace(/[|;,\-\s]+$/, '');
+        const uid = Number.parseInt(userId, 10);
+        const rid = Number.parseInt(roomId, 10);
+        if (!cleanName || !cleanRoom || !Number.isFinite(rid)) return;
+        const key = `${cleanName.toLocaleLowerCase('fi')}:${rid}`;
+        if (!seen.has(key)) { seen.add(key); output.push({ username: cleanName, userId: Number.isFinite(uid) ? uid : null, roomName: cleanRoom, roomId: rid }); }
+      };
+
+      try {
+        const parsed = JSON.parse(text);
+        const visit = (value) => {
+          if (Array.isArray(value)) value.forEach(visit);
+          else if (value && typeof value === 'object') {
+            const username = value.username ?? value.userName ?? value.name;
+            const userId = value.userId ?? value.userid ?? value.id;
+            const roomName = value.roomName ?? value.roomname ?? value.room?.name;
+            const roomId = value.roomId ?? value.roomid ?? value.room?.id;
+            if (username != null && userId != null && roomName != null && roomId != null) add(username, userId, roomName, roomId);
+            Object.values(value).forEach(visit);
+          }
+        };
+        visit(parsed);
+      } catch (_) { /* command output is usually plain text */ }
+
+      const lines = String(text).split(/\r?\n|<br\s*\/?>/i).map(line => line.replace(/<[^>]+>/g, '').trim()).filter(Boolean);
+      const patterns = [
+        /(?:user(?:name)?|käyttäjä)\s*[:=]\s*([^,;|]+).*?(?:user\s*)?id\s*[:=#]?\s*(\d+).*?(?:room|huone)(?:\s*name)?\s*[:=]\s*([^,;|]+).*?(?:room|huone)\s*id\s*[:=#]?\s*(\d+)/i,
+        /^([^|;,]+?)\s*(?:\(|\[|#|id[:= ]+)(\d+)(?:\)|\])?\s*[|;,\-]+\s*([^|;,]+?)\s*(?:\(|\[|#|id[:= ]+)(\d+)(?:\)|\])?$/i,
+        /^(\S+)\s*\(?(\d+)\)?\s+(?:in|@|huoneessa)\s+(.+?)\s*\(?(\d+)\)?$/i
+      ];
+      lines.forEach((line) => {
+        const productionMatch = line.match(/^(.+?)\s+on\s+huoneessa\s+(.+?)\s+\((\d+)\)\s*$/i);
+        if (productionMatch) { add(productionMatch[1], null, productionMatch[2], productionMatch[3]); return; }
+        for (const pattern of patterns) {
+          const match = line.match(pattern);
+          if (match) { add(match[1], match[2], match[3], match[4]); break; }
+        }
+      });
+      return output;
+    },
+
+    rebuildDerivedData() {
+      const rooms = new Map();
+      this.usersOnline.forEach((user) => {
+        const room = rooms.get(user.roomId) || { id: user.roomId, name: user.roomName, count: 0 };
+        room.count++;
+        rooms.set(user.roomId, room);
+      });
+      this.rooms = [...rooms.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'fi'));
+      const staff = new Set(this.getStaffUsernames().map(name => name.toLocaleLowerCase('fi')));
+      this.staffOnline = this.usersOnline.filter(user => staff.has(user.username.toLocaleLowerCase('fi')));
+      this.refreshCard();
+    },
+
+    currentFriendLocations() {
+      const byId = new Map(this.usersOnline.filter(user => user.userId != null).map(user => [user.userId, user]));
+      const byName = new Map(this.usersOnline.map(user => [user.username.toLocaleLowerCase('fi'), user]));
+      const knownFriends = new Map([...this.friends.values()].map(friend => [friend.username.toLocaleLowerCase('fi'), friend]));
+      const doc = this.targetDoc();
+      doc?.querySelectorAll('.friend-bar-horizontal-item .friend-username').forEach((element) => {
+        const username = element.textContent?.trim();
+        if (username && !knownFriends.has(username.toLocaleLowerCase('fi'))) {
+          knownFriends.set(username.toLocaleLowerCase('fi'), { id: null, username, online: true });
+        }
+      });
+      return [...knownFriends.values()].map(friend => {
+        const location = (friend.id != null ? byId.get(friend.id) : null) || byName.get(friend.username.toLocaleLowerCase('fi'));
+        if (location) return { id: friend.id, username: friend.username, look: friend.look || '', gender: friend.gender, roomId: location.roomId, roomName: location.roomName };
+        if (friend.online) return { id: friend.id, username: friend.username, look: friend.look || '', gender: friend.gender, roomId: null, roomName: 'Ei huoneessa' };
+        return null;
+      }).filter(Boolean).sort((a, b) => a.roomName.localeCompare(b.roomName, 'fi') || a.username.localeCompare(b.username, 'fi'));
+    },
+
+    observeNavigatorAssets() {
+      const doc = this.targetDoc();
+      if (!doc?.body || this._navigatorDoc === doc) return;
+      this._navigatorObserver?.disconnect();
+      this.collectNavigatorAssets();
+      let queued = false;
+      this._navigatorObserver = new MutationObserver((mutations) => {
+        if (queued || !mutations.some(mutation => [...mutation.addedNodes].some(node => node.nodeType === 1 && (node.matches?.('.nitro-navigator, .navigator-item') || node.querySelector?.('.nitro-navigator .navigator-item'))))) return;
+        queued = true;
+        requestAnimationFrame(() => {
+          queued = false;
+          if (this.collectNavigatorAssets()) this.refreshCard();
+        });
+      });
+      this._navigatorDoc = doc;
+      this._navigatorObserver.observe(doc.body, { childList: true, subtree: true });
+    },
+
+    collectNavigatorAssets() {
+      const doc = this.targetDoc();
+      if (!doc) return false;
+      let changed = false;
+      doc.querySelectorAll('.nitro-navigator .navigator-item').forEach((item) => {
+        const image = item.querySelector('img[src]');
+        if (!image?.src) return;
+        const text = item.textContent?.toLocaleLowerCase('fi') || '';
+        const room = this.rooms.find(candidate => text.includes(candidate.name.toLocaleLowerCase('fi')));
+        if (room && this.roomThumbnails.get(room.id) !== image.src) {
+          this.roomThumbnails.set(room.id, image.src);
+          changed = true;
+        }
+      });
+      return changed;
+    },
+
+    friendAvatarUrl(username) {
+      const doc = this.targetDoc();
+      const target = [...(doc?.querySelectorAll('.friend-bar-horizontal-item') || [])].find(item =>
+        item.querySelector('.friend-username')?.textContent?.trim().localeCompare(username, 'fi', { sensitivity: 'base' }) === 0);
+      const avatar = target?.querySelector('.avatar-image, img, .friend-bar-item-head.avatar, .avatar');
+      const imageSrc = avatar?.tagName === 'IMG' ? avatar.src : '';
+      const background = avatar ? ((doc.defaultView || window).getComputedStyle(avatar).backgroundImage || avatar.style?.backgroundImage) : '';
+      const match = background?.match(/^url\(["']?(.*?)["']?\)$/);
+      return imageSrc || match?.[1] || '';
+    },
+
+    avatarImagerUrl(friend, size = '') {
+      if (friend.look) return `https://kuplahotelli.com/?figure=${encodeURIComponent(friend.look)}&direction=2&gesture=sml${size ? `&size=${size}` : ''}&headonly=1`;
+      return this.friendAvatarUrl(friend.username);
+    },
+
+    loadStore() {
+      const value = GM_getValue(this.STORAGE_KEY, { accounts: {} });
+      return value && typeof value === 'object' ? value : { accounts: {} };
+    },
+
+    loadAccountState() {
+      if (!this.account) return null;
+      return this.loadStore().accounts?.[String(this.account.id)] || null;
+    },
+
+    saveSnapshot() {
+      if (!this.account) return;
+      const store = this.loadStore();
+      if (!store.accounts || typeof store.accounts !== 'object') store.accounts = {};
+      store.accounts[String(this.account.id)] = {
+        username: this.account.username,
+        sessionStartedAt: this.sessionStartedAt,
+        lastSeenAt: Date.now(),
+        rooms: this.rooms,
+        friends: this.currentFriendLocations(),
+        staff: this.staffOnline.map(user => ({ username: user.username, roomId: user.roomId, roomName: user.roomName }))
+      };
+      GM_setValue(this.STORAGE_KEY, store);
+    },
+
+    previousMessages() {
+      const current = ChatHistoryCache.currentSessionId;
+      const previous = (ChatHistoryCache.cache || []).filter(message => message.sessionId && message.sessionId !== current);
+      const previousSessionId = previous[previous.length - 1]?.sessionId;
+      if (!previousSessionId) return [];
+
+      const excludedStyleIds = new Set([1, 2, 34]); // system, bot, WIRED
+      return previous.filter(message => {
+        if (message.sessionId !== previousSessionId) return false;
+        if (excludedStyleIds.has(Number(message.styleId))) return false;
+
+        // Older cache entries may only have the original bubble class metadata.
+        const bubbleClasses = String(message.bubbleClass || '').split(/\s+/);
+        return !bubbleClasses.some(className =>
+          className === 'bubble-1' || className === 'bubble-2' || className === 'bubble-34'
+        );
+      });
+    },
+
+    targetDoc() { return DOM.getIframeDoc() || document; },
+    formatVisit(timestamp) {
+      if (!timestamp) return 'Ei aiempaa tallennettua käyntiä';
+      const elapsed = Math.max(0, Date.now() - Number(timestamp));
+      const minutes = Math.floor(elapsed / 60000);
+      if (minutes < 1) return 'Hetki sitten';
+      if (minutes < 60) return `${minutes} ${minutes === 1 ? 'minuutti' : 'minuuttia'} sitten`;
+      const hours = Math.floor(elapsed / 3600000);
+      if (hours < 48) return `${hours} ${hours === 1 ? 'tunti' : 'tuntia'} sitten`;
+      const days = Math.floor(elapsed / 86400000);
+      return `${days} ${days === 1 ? 'päivä' : 'päivää'} sitten`;
+    },
+
+    makeSection(doc, title, rows, emptyText, listClass = '') {
+      const section = doc.createElement('section');
+      section.className = 'kuplafix-welcome-section';
+      const heading = doc.createElement('h3'); heading.textContent = title; section.appendChild(heading);
+      const list = doc.createElement('div'); list.className = `kuplafix-welcome-list ${listClass}`.trim(); section.appendChild(list);
+      if (!rows.length) {
+        const empty = doc.createElement('div'); empty.className = 'kuplafix-welcome-row kuplafix-welcome-muted'; empty.textContent = emptyText; list.appendChild(empty);
+      } else rows.forEach(row => list.appendChild(row));
+      return section;
+    },
+
+    makeRow(doc, label, detail, action) {
+      const row = doc.createElement('div'); row.className = 'kuplafix-welcome-row';
+      const main = doc.createElement('span'); main.className = 'kuplafix-welcome-row-main'; main.textContent = label; row.appendChild(main);
+      if (action) {
+        const button = doc.createElement('button'); button.className = 'kuplafix-welcome-action'; button.textContent = detail; button.addEventListener('click', action); row.appendChild(button);
+      } else if (detail) {
+        const pill = doc.createElement('span'); pill.className = 'kuplafix-welcome-pill'; pill.textContent = detail; row.appendChild(pill);
+      }
+      return row;
+    },
+
+    roomTint(roomId) {
+      if (!Number.isFinite(Number(roomId))) return ['rgba(52,63,69,.42)', 'rgba(111,130,139,.55)', '#9fb1b9'];
+      const roomIndex = this.rooms.findIndex(room => Number(room.id) === Number(roomId));
+      const tintIndex = roomIndex >= 0 ? roomIndex : Math.abs(Number(roomId));
+      return this.ROOM_TINTS[tintIndex % this.ROOM_TINTS.length];
+    },
+
+    applyRoomTint(element, roomId) {
+      const [background, border, accent] = this.roomTint(roomId);
+      element.style.setProperty('--kf-room-tint', background);
+      element.style.setProperty('--kf-room-border', border);
+      element.style.setProperty('--kf-room-accent', accent);
+    },
+
+    setRoomHighlight(roomId, active) {
+      if (!this.card || !Number.isFinite(Number(roomId))) return;
+      const room = [...this.card.querySelectorAll('.kuplafix-welcome-room[data-room-id]')]
+        .find(element => Number(element.dataset.roomId) === Number(roomId));
+      room?.classList.toggle('kuplafix-room-highlight', active);
+    },
+
+    makeRoomCard(doc, room, friendsInRoom = []) {
+      const button = doc.createElement('button');
+      button.className = 'kuplafix-welcome-room navigator-item py-1';
+      button.dataset.roomId = String(room.id);
+      const population = Math.max(1, Number(room.count) || 1);
+      if (friendsInRoom.length) this.applyRoomTint(button, room.id);
+      button.addEventListener('click', () => this.enterRoom(room.id));
+      const bubbles = doc.createElement('span');
+      bubbles.className = 'kuplafix-welcome-room-bubbles';
+      bubbles.setAttribute('aria-hidden', 'true');
+      let bubbleSeed = [...String(room.id)].reduce((seed, character) => ((seed * 31) + character.charCodeAt(0)) >>> 0, population);
+      const nextBubbleRandom = () => {
+        bubbleSeed = ((bubbleSeed * 1664525) + 1013904223) >>> 0;
+        return bubbleSeed / 4294967296;
+      };
+      const bubbleCount = Math.min(28, population);
+      for (let index = 0; index < bubbleCount; index++) {
+        const bubble = doc.createElement('i');
+        bubble.className = 'kuplafix-welcome-room-bubble';
+        const duration = Math.max(4.8, 8.7 - Math.min(population, 24) * 0.14) + nextBubbleRandom() * 2.4;
+        bubble.style.setProperty('--kf-bubble-x', `${(4 + nextBubbleRandom() * 92).toFixed(1)}%`);
+        bubble.style.setProperty('--kf-bubble-size', `${(3 + nextBubbleRandom() * 5).toFixed(1)}px`);
+        bubble.style.setProperty('--kf-bubble-drift', `${(-12 + nextBubbleRandom() * 24).toFixed(1)}px`);
+        bubble.style.setProperty('--kf-bubble-opacity', (0.13 + nextBubbleRandom() * 0.17).toFixed(2));
+        bubble.style.setProperty('--kf-bubble-duration', `${duration.toFixed(2)}s`);
+        bubble.style.setProperty('--kf-bubble-delay', `${(-nextBubbleRandom() * duration).toFixed(2)}s`);
+        bubbles.appendChild(bubble);
+      }
+      const thumb = doc.createElement('span');
+      thumb.className = 'kuplafix-welcome-room-thumb room-thumbnail';
+      thumb.dataset.fallback = room.name.trim().charAt(0).toLocaleUpperCase('fi') || '⌂';
+      const thumbnail = this.roomThumbnails.get(room.id) || `/swf/camera/thumbnails/${encodeURIComponent(room.id)}.png`;
+      const image = doc.createElement('img'); image.alt = '';
+      image.addEventListener('load', () => { thumb.dataset.loaded = 'true'; });
+      image.addEventListener('error', () => { image.remove(); delete thumb.dataset.loaded; });
+      image.src = thumbnail;
+      thumb.appendChild(image);
+      const copy = doc.createElement('span'); copy.className = 'kuplafix-welcome-room-copy';
+      const name = doc.createElement('span'); name.className = 'kuplafix-welcome-room-name'; name.textContent = room.name;
+      const count = doc.createElement('span'); count.className = 'kuplafix-welcome-room-count'; count.textContent = `♟ ${room.count} ${Number(room.count) === 1 ? 'hahmo' : 'hahmoa'}`;
+      copy.append(name, count);
+      if (friendsInRoom.length) {
+        const heads = doc.createElement('span'); heads.className = 'kuplafix-welcome-room-friends';
+        heads.title = friendsInRoom.map(friend => friend.username).join(', ');
+        friendsInRoom.forEach((friend) => {
+          const avatarUrl = this.avatarImagerUrl(friend, 's');
+          if (!avatarUrl) return;
+          const head = doc.createElement('span'); head.className = 'kuplafix-welcome-room-friend-head';
+          head.style.backgroundImage = `url("${avatarUrl.replace(/"/g, '%22')}")`;
+          heads.appendChild(head);
+        });
+        copy.appendChild(heads);
+      }
+      button.append(bubbles, thumb, copy);
+      return button;
+    },
+
+    makeFriendCard(doc, friend, previousRoom = '', current = true) {
+      const canEnterRoom = current && Number.isFinite(Number(friend.roomId));
+      const element = doc.createElement(canEnterRoom ? 'button' : 'div');
+      element.className = 'kuplafix-welcome-friend';
+      this.applyRoomTint(element, friend.roomId);
+      if (canEnterRoom) {
+        element.title = `Siirry huoneeseen ${friend.roomName}`;
+        element.addEventListener('click', () => this.enterRoom(friend.roomId));
+        element.addEventListener('pointerenter', () => this.setRoomHighlight(friend.roomId, true));
+        element.addEventListener('pointerleave', () => this.setRoomHighlight(friend.roomId, false));
+      }
+      const avatar = doc.createElement('span'); avatar.className = 'kuplafix-welcome-avatar';
+      const avatarUrl = this.avatarImagerUrl(friend);
+      if (avatarUrl) avatar.style.backgroundImage = `url("${avatarUrl.replace(/"/g, '%22')}")`;
+      else avatar.dataset.fallback = friend.username.trim().charAt(0).toLocaleUpperCase('fi') || '?';
+      const copy = doc.createElement('span'); copy.className = 'kuplafix-welcome-friend-copy';
+      const name = doc.createElement('span'); name.className = 'kuplafix-welcome-friend-name'; name.textContent = friend.username;
+      const room = doc.createElement('span'); room.className = 'kuplafix-welcome-friend-room'; room.textContent = current ? friend.roomName : `Viimeksi: ${friend.roomName}`;
+      copy.append(name, room);
+      if (current && previousRoom && previousRoom !== friend.roomName) {
+        const last = doc.createElement('span'); last.className = 'kuplafix-welcome-friend-last'; last.textContent = `Viime käynnillä: ${previousRoom}`; copy.appendChild(last);
+      }
+      element.append(avatar, copy);
+      return element;
+    },
+
+    makeFriendGroupsSection(doc, friends, previousFriendRooms) {
+      const section = doc.createElement('section');
+      section.className = 'kuplafix-welcome-section kuplafix-welcome-friends-section';
+      const heading = doc.createElement('h3'); heading.textContent = `Kaverit paikalla${friends.length ? ` · ${friends.length}` : ''}`; section.appendChild(heading);
+      const groups = doc.createElement('div'); groups.className = 'kuplafix-welcome-friend-groups'; section.appendChild(groups);
+      if (!friends.length) {
+        const empty = doc.createElement('div'); empty.className = 'kuplafix-welcome-row kuplafix-welcome-muted'; empty.textContent = 'Ei kavereita paikalla.'; groups.appendChild(empty);
+        return section;
+      }
+      const byRoom = new Map();
+      friends.forEach((friend) => {
+        const key = Number.isFinite(Number(friend.roomId)) ? `room:${friend.roomId}` : 'no-room';
+        const group = byRoom.get(key) || { roomName: friend.roomName || 'Ei huoneessa', friends: [] };
+        group.friends.push(friend); byRoom.set(key, group);
+      });
+      const renderedCards = [];
+      [...byRoom.entries()].sort(([, a], [, b]) => b.friends.length - a.friends.length || a.roomName.localeCompare(b.roomName, 'fi')).forEach(([groupKey, group]) => {
+        const blob = doc.createElement('div'); blob.className = 'kuplafix-welcome-friend-room-blob';
+        const groupRoomId = group.friends[0]?.roomId;
+        this.applyRoomTint(blob, groupRoomId);
+        const list = doc.createElement('div'); list.className = 'kuplafix-welcome-friend-list';
+        const cards = group.friends.sort((a, b) => a.username.localeCompare(b.username, 'fi')).map((friend) =>
+          this.makeFriendCard(doc, friend, previousFriendRooms.get(friend.username.toLocaleLowerCase('fi')) || '', true));
+        cards.forEach((card) => {
+          list.appendChild(card);
+          renderedCards.push({ card, groupKey });
+        });
+        blob.appendChild(list); groups.appendChild(blob);
+      });
+      renderedCards.forEach(({ card, groupKey }, index) => {
+        const column = index % 3;
+        const sameGroupAt = (candidateIndex) => renderedCards[candidateIndex]?.groupKey === groupKey;
+        const hasDifferentAbove = index >= 3 && renderedCards[index - 3]?.groupKey !== groupKey;
+        const hasDifferentLeft = column > 0 && renderedCards[index - 1]?.groupKey !== groupKey;
+        const hasAbove = index >= 3 && sameGroupAt(index - 3);
+        const hasBelow = sameGroupAt(index + 3);
+        const hasLeft = column > 0 && sameGroupAt(index - 1);
+        const hasRight = column < 2 && sameGroupAt(index + 1);
+        if (hasDifferentAbove) card.classList.add('kf-blob-gap-top');
+        if (hasDifferentLeft) card.classList.add('kf-blob-gap-left');
+        if (!hasAbove) card.classList.add('kf-edge-top');
+        if (!hasRight) card.classList.add('kf-edge-right');
+        if (!hasBelow) card.classList.add('kf-edge-bottom');
+        if (!hasLeft) card.classList.add('kf-edge-left');
+        if (!hasAbove && !hasLeft) card.classList.add('kf-corner-tl');
+        if (!hasAbove && !hasRight) card.classList.add('kf-corner-tr');
+        if (!hasBelow && !hasLeft) card.classList.add('kf-corner-bl');
+        if (!hasBelow && !hasRight) card.classList.add('kf-corner-br');
+      });
+      return section;
+    },
+
+    open(force = false) {
+      if (!force && !config.get('welcomeSummaryEnabled')) return;
+      const doc = this.targetDoc();
+      if (!doc?.body) return;
+      if (this.card?.ownerDocument !== doc) this.card = null;
+      if (!this.card) {
+        this.card = doc.createElement('div');
+        this.card.className = 'kuplafix-welcome-card';
+        this.card.setAttribute('role', 'dialog');
+        this.card.setAttribute('aria-label', 'Kirjautumisen yhteenveto');
+        const savedPosition = config.get('welcomeSummaryPosition');
+        if (Number.isFinite(savedPosition?.x) && Number.isFinite(savedPosition?.y)) {
+          this.card.style.left = `${savedPosition.x}px`;
+          this.card.style.top = `${savedPosition.y}px`;
+          this.card.style.transform = 'none';
+        }
+        this.setupDrag();
+        doc.body.appendChild(this.card);
+      }
+      this.card.hidden = false;
+      this.refreshCard();
+    },
+
+    close() { if (this.card) this.card.hidden = true; },
+
+    setupDrag() {
+      if (!this.card || this.card.dataset.dragReady) return;
+      this.card.dataset.dragReady = 'true';
+      this.card.addEventListener('pointerdown', (event) => {
+        if (!event.target.closest('.kuplafix-welcome-head') || event.target.closest('button')) return;
+        const doc = this.card.ownerDocument;
+        const view = doc.defaultView || window;
+        const rect = this.card.getBoundingClientRect();
+        const offsetX = event.clientX - rect.left;
+        const offsetY = event.clientY - rect.top;
+        this.card.style.left = `${rect.left}px`;
+        this.card.style.top = `${rect.top}px`;
+        this.card.style.transform = 'none';
+        const move = (moveEvent) => {
+          const maxX = Math.max(0, view.innerWidth - this.card.offsetWidth);
+          const maxY = Math.max(0, view.innerHeight - 48);
+          const x = Math.max(0, Math.min(maxX, moveEvent.clientX - offsetX));
+          const y = Math.max(0, Math.min(maxY, moveEvent.clientY - offsetY));
+          this.card.style.left = `${x}px`;
+          this.card.style.top = `${y}px`;
+        };
+        const stop = () => {
+          doc.removeEventListener('pointermove', move);
+          doc.removeEventListener('pointerup', stop);
+          config.set('welcomeSummaryPosition', { x: Number.parseFloat(this.card.style.left), y: Number.parseFloat(this.card.style.top) });
+        };
+        doc.addEventListener('pointermove', move);
+        doc.addEventListener('pointerup', stop, { once: true });
+        event.preventDefault();
+      });
+    },
+
+    refreshCard() {
+      if (!this.card || this.card.hidden) return;
+      const doc = this.card.ownerDocument;
+      this.card.replaceChildren();
+      const head = doc.createElement('div'); head.className = 'kuplafix-welcome-head';
+      const headingWrap = doc.createElement('div');
+      const brand = doc.createElement('div'); brand.className = 'kuplafix-welcome-brand'; brand.textContent = 'kuplaFix · yhteenveto';
+      const title = doc.createElement('h2'); title.className = 'kuplafix-welcome-title'; title.textContent = `Tervetuloa${this.account?.username ? ` takaisin, ${this.account.username}` : ''}`;
+      const visit = doc.createElement('div'); visit.className = 'kuplafix-welcome-visit';
+      visit.textContent = this.previous?.lastSeenAt
+        ? `Viimeinen tallennettu käyntisi: ${this.formatVisit(this.previous.lastSeenAt)}`
+        : this.formatVisit(null);
+      if (this.previous?.lastSeenAt) {
+        try { visit.title = new Intl.DateTimeFormat('fi-FI', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(this.previous.lastSeenAt)); }
+        catch (_) { /* relative label remains useful */ }
+      }
+      headingWrap.append(brand, title, visit);
+      const close = doc.createElement('button'); close.className = 'kuplafix-welcome-close'; close.textContent = '✕'; close.setAttribute('aria-label', 'Sulje'); close.addEventListener('click', () => this.close());
+      head.append(headingWrap, close); this.card.appendChild(head);
+      const body = doc.createElement('div'); body.className = 'kuplafix-welcome-body';
+      const grid = doc.createElement('div'); grid.className = 'kuplafix-welcome-grid';
+
+      const currentFriends = this.currentFriendLocations();
+      const friendsByRoom = new Map();
+      currentFriends.forEach((friend) => {
+        if (!Number.isFinite(Number(friend.roomId))) return;
+        const list = friendsByRoom.get(friend.roomId) || [];
+        list.push(friend); friendsByRoom.set(friend.roomId, list);
+      });
+      this.collectNavigatorAssets();
+      const roomRows = this.rooms.slice(0, 6).map(room => this.makeRoomCard(doc, room, friendsByRoom.get(room.id) || []));
+      const roomSection = this.makeSection(doc, 'Huoneissa nyt', roomRows, this.requestPendingUntil ? 'Haetaan huonetietoja…' : 'Huonetietoja ei saatu.', 'kuplafix-welcome-room-list');
+      roomSection.classList.add('kuplafix-welcome-rooms-section');
+      grid.appendChild(roomSection);
+
+      const previousFriendRooms = new Map((this.previous?.friends || []).map(friend => [friend.username.toLocaleLowerCase('fi'), friend.roomName]));
+      grid.appendChild(this.makeFriendGroupsSection(doc, currentFriends, previousFriendRooms));
+
+      const staffRows = this.staffOnline.map(staff => this.makeRow(doc, staff.username, staff.roomName, () => this.enterRoom(staff.roomId)));
+      if (staffRows.length) {
+        const staffSection = this.makeSection(doc, 'Henkilökunta paikalla', staffRows, '');
+        staffSection.classList.add('kuplafix-welcome-staff-section');
+        grid.appendChild(staffSection);
+      }
+
+      const chatSection = doc.createElement('section'); chatSection.className = 'kuplafix-welcome-section kuplafix-welcome-chat';
+      const chatHeading = doc.createElement('h3'); chatHeading.textContent = 'Edellisen session keskustelu'; chatSection.appendChild(chatHeading);
+      const chatScroll = doc.createElement('div'); chatScroll.className = 'kuplafix-welcome-chat-scroll';
+      const messages = this.previousMessages();
+      if (messages.length) {
+        messages.forEach(message => chatScroll.appendChild(ChatHistoryUI.renderMessage(message, doc, false)));
+        requestAnimationFrame(() => { chatScroll.scrollTop = chatScroll.scrollHeight; });
+      } else {
+        const empty = doc.createElement('div'); empty.className = 'kuplafix-welcome-muted'; empty.textContent = 'Ei aiemman session viestejä välimuistissa.'; chatScroll.appendChild(empty);
+      }
+      chatSection.appendChild(chatScroll); grid.appendChild(chatSection);
+      body.appendChild(grid); this.card.appendChild(body);
+
+      const footer = doc.createElement('div'); footer.className = 'kuplafix-welcome-footer';
+      const history = doc.createElement('button'); history.textContent = 'Keskusteluhistoria'; history.addEventListener('click', () => { this.close(); ChatHistoryUI.toggle(true); });
+      const continueButton = doc.createElement('button'); continueButton.textContent = 'Jatka chattiin'; continueButton.addEventListener('click', () => this.close());
+      footer.append(history, continueButton); this.card.appendChild(footer);
+    },
+
+    enterRoom(roomId) {
+      if (PacketManager.sendSilent(2312, PacketManager.types.Int(roomId), PacketManager.types.String(''))) this.close();
+      else UI.showToast('Huoneeseen siirtyminen ei onnistunut.', 'error', this.targetDoc());
+    },
+
+    openFriendChat(username) {
+      this.close();
+      const doc = this.targetDoc();
+      const toolbar = doc.querySelector('[title="Kaverit"], [title="Friends"], [aria-label="Kaverit"], [aria-label="Friends"]');
+      toolbar?.click();
+      setTimeout(() => {
+        const candidate = [...doc.querySelectorAll('button, [role="button"], .nitro-friends-list-item')].find(element => element.textContent?.trim().toLocaleLowerCase('fi').includes(username.toLocaleLowerCase('fi')));
+        candidate?.click();
+        if (!candidate && toolbar) UI.showToast(`Avaa keskustelu: ${username}`, 'info', doc);
+      }, 250);
+    },
+
+    showPreview() {
+      if (!this.account) this.account = { id: -1, username: 'Kuplailija' };
+      this.previous ||= { lastSeenAt: Date.now() - 86400000, friends: [{ username: 'Esimerkki', roomName: 'Kahvila', roomId: 101 }] };
+      this.rooms = [{ id: 101, name: 'Kahvila', count: 12 }, { id: 202, name: 'Puisto', count: 7 }];
+      this.staffOnline = [{ username: this.getStaffUsernames()[0], roomName: 'Aula', roomId: 303 }];
+      this.open(true);
+    }
+  };
+
   const GLOBAL_MODULES = [
     Styles,
     UI,
@@ -12368,6 +13295,7 @@
 
   // Immediate WebSocket hook registration (must be before a bookmarklet client starts)
   PacketManager.init();
+  LoginWelcome.init();
 
   if (IS_BOOKMARKLET_BOOT) {
     log.info('Bookmarklet boot detected: iframe lifecycle is suspended until a fresh Nitro client is ready.');
@@ -12403,6 +13331,7 @@
       alerts: BubbleAlerts,
       chatCache: ChatHistoryCache,
       chatUI: ChatHistoryUI,
+      welcome: LoginWelcome,
       packets: PacketManager,
       browser: Browser,
       builder: PacketBuilder,

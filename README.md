@@ -31,6 +31,7 @@ KuplaFix-painike ilmestyy Nitro-clientin sivupalkkiin tai työkaluriviin. Avaa s
 
 ## Ominaisuudet
 
+- kirjautumisen yhteenvetokortti: viime käynti, aktiiviset huoneet, kavereiden nykyinen ja aiempi sijainti, edellisen session viestit ja paikalla oleva henkilökunta
 - paikalla olevien hahmojen määrä chat-kentässä
 - GIF-estot
 - huoneen kirkkaus- ja yövalosäädöt
@@ -44,6 +45,19 @@ KuplaFix-painike ilmestyy Nitro-clientin sivupalkkiin tai työkaluriviin. Avaa s
 - pakettien loki, pakettirakentaja ja makrot
 
 Pakettityökalut voivat tarkkailla, muokata ja lähettää peliclientin WebSocket-paketteja. Käytä niitä omalla vastuulla ja Kuplahotellin sääntöjen mukaisesti.
+
+## v2.2.0
+
+- lisää kirjautumisen jälkeen avautuvan, siirrettävän yhteenvetokortin viimeisestä tallennetusta käynnistä, aktiivisista huoneista, kavereista, henkilökunnasta ja edellisen session keskustelusta
+- hakee yhdellä `:userson`-komennolla käyttäjien nimet, huoneet ja tunnisteet, tunnistaa tuotannon vastausmuodon ja sulkee komentovastauksen automaattisesti tietojen saavuttua
+- näyttää aktiiviset huoneet Navigator-henkisinä kortteina natiivikokoisine huonekuvineen, `1 hahmo` / `N hahmoa` -määrineen, kavereiden avataripäineen ja käyttäjämäärään suhteutettuine, pehmeästi ajoitettuine kuplineen
+- näyttää kaikki paikalla olevat kaverit terävinä head-only-avatareina huonekohtaisesti sävytetyssä, rivit täyttävässä ruudukossa; saman huoneen kortit muodostavat yhtenäisen blobin ja eri ryhmät erotetaan pienellä välillä
+- siirtyy kaverin huoneeseen korttia painamalla ja korostaa vastaavan huonekortin minkä tahansa kaverikortin päällä osoitetta pidettäessä
+- näyttää edellisen session keskustelun Kuplan omalla typografialla ja kuplatyyleillä, mutta jättää yhteenvedosta pois järjestelmä-, botti- ja WIRED-viestit säilyttäen ne varsinaisessa keskusteluhistoriassa
+- näyttää määritellyn henkilökunnan huoneineen vain silloin, kun henkilökuntaa on paikalla
+- lisää KuplaFix-valikkoon yhteenvetokortin käyttökytkimen, muokattavan henkilökuntalistan ja poissaolorajan, jonka jälkeen yhteenveto avautuu automaattisesti
+- tallentaa viime käynnin tiedot käyttäjäkohtaisesti ilman kaikkien käyttäjien raakaa sijaintilistaa ja säilyttää yhteenvetoikkunan siirretyn sijainnin
+- tiivistää KuplaFix-valikkoa ja käyttää valikossa sekä yhteenvetokortissa läpikuultavaa, muun KuplaFix-käyttöliittymän mukaista ulkoasua
 
 ## v2.1.6
 

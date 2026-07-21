@@ -194,7 +194,7 @@
   <aside class="feature-rail" aria-hidden="true">
     <div class="feature-rail-track">
       <ul class="feature-rail-list">
-        <li>viestihistoria joka ei katoa</li><li>palaa vanhoihin viesteihin</li><li>chat-historia suodattimet</li><li>kävijämäärä aina näkyvissä</li><li>ilmoitukset omilla ehdoillasi</li><li>tärkeät ilmoitukset pysyvät näkyvissä</li><li>clientin kirkkauden säädin</li><li>yövalo overlay huoneisiin</li><li>hahmon ohjaus WASD-näppäimillä</li><li>ääniviestit</li><li>puhekanavat clientin sisällä</li><li>näytönjako ilman erillistä sovellusta</li><li>selaa etusivua poistumatta clientistä</li><li>vie chat ponnahdusikkunaan</li><li>tilastot suoraan clientissä</li><li>automaattinen lotto</li><li>vähemmän lagia clientissä</li><li>clientin lukitut asetukset muokattaviksi</li><li>luo ja jaa makroja</li><li>toistuvat toiminnot automaattisiksi</li><li>rajattomasti omia automaatioita</li><li>kaikki ominaisuudet säädettävissä</li><li>omat asetukset</li><li>enemmän Kuplaa suoraan clientissä</li>
+        <li>kirjautumisen yhteenveto</li><li>näe aktiiviset huoneet heti</li><li>löydä kaverit huoneistaan</li><li>jatka edellisen session keskustelusta</li><li>näe paikalla oleva henkilökunta</li><li>viestihistoria joka ei katoa</li><li>palaa vanhoihin viesteihin</li><li>chat-historia suodattimet</li><li>kävijämäärä aina näkyvissä</li><li>ilmoitukset omilla ehdoillasi</li><li>tärkeät ilmoitukset pysyvät näkyvissä</li><li>clientin kirkkauden säädin</li><li>yövalo overlay huoneisiin</li><li>hahmon ohjaus WASD-näppäimillä</li><li>ääniviestit</li><li>puhekanavat clientin sisällä</li><li>näytönjako ilman erillistä sovellusta</li><li>selaa etusivua poistumatta clientistä</li><li>vie chat ponnahdusikkunaan</li><li>tilastot suoraan clientissä</li><li>automaattinen lotto</li><li>vähemmän lagia clientissä</li><li>clientin lukitut asetukset muokattaviksi</li><li>luo ja jaa makroja</li><li>toistuvat toiminnot automaattisiksi</li><li>rajattomasti omia automaatioita</li><li>kaikki ominaisuudet säädettävissä</li><li>omat asetukset</li><li>enemmän Kuplaa suoraan clientissä</li>
       </ul>
     </div>
   </aside>
@@ -221,7 +221,7 @@
             <li><strong>Siirry clienttiin.</strong> Avaa Kuplahotelli ja lataa client.</li>
             <li><strong>Lataa kuplaFix.</strong> Paina tallentamaasi kuplaFix-kirjanmerkkiä.</li>
           </ol>
-          <a id="kuplafix-bookmarklet" class="button button-primary bookmarklet" href="javascript:(()=>{if(!/(^|\.)kuplahotelli\.com$/i.test(location.hostname)){alert('Avaa ensin Kuplahotelli ja peliclientti.');return;}if(window.__KUPLAFIX_LOADING__||window.__kuplafix_singleton__){alert('kuplaFix on jo käytössä tai latautumassa tällä sivulla.');return;}window.__KUPLAFIX_LOADING__=true;window.__KUPLAFIX_BOOKMARKLET_BOOT__=true;const s=document.createElement('script');const done=()=>{window.__KUPLAFIX_LOADING__=false;s.remove();};s.src='https://0-es.github.io/kuplafix/kuplafix.user.js';s.onload=done;s.onerror=()=>{window.__KUPLAFIX_LOADING__=false;window.__KUPLAFIX_BOOKMARKLET_BOOT__=undefined;s.remove();alert('kuplaFixin lataaminen epäonnistui. Tarkista verkkoyhteys ja yritä uudelleen.');};document.documentElement.appendChild(s);})();">kuplaFix</a>
+          <a id="kuplafix-bookmarklet" class="button button-primary bookmarklet" href="javascript:(()=>{if(!/(^|\.)kuplahotelli\.com$/i.test(location.hostname)){alert('Avaa ensin Kuplahotelli ja peliclientti.');return;}if(window.__KUPLAFIX_LOADING__||window.__kuplafix_singleton__){alert('kuplaFix on jo käytössä tai latautumassa tällä sivulla.');return;}window.__KUPLAFIX_LOADING__=true;window.__KUPLAFIX_BOOKMARKLET_BOOT__=true;const s=document.createElement('script');const done=()=>{window.__KUPLAFIX_LOADING__=false;s.remove();};s.src='https://0-es.github.io/kuplafix/kuplafix.user.js?v=2.2.0';s.onload=done;s.onerror=()=>{window.__KUPLAFIX_LOADING__=false;window.__KUPLAFIX_BOOKMARKLET_BOOT__=undefined;s.remove();alert('kuplaFixin lataaminen epäonnistui. Tarkista verkkoyhteys ja yritä uudelleen.');};document.documentElement.appendChild(s);})();">kuplaFix</a>
           <div class="install-note">Kirjanmerkkipalkki näkyviin: <code>Ctrl + Shift + B</code></div>
         </article>
         <article class="install-option">
@@ -262,9 +262,30 @@
   </pre>
           <button class="kuplafix-close-btn" id="kuplafix-close-btn" aria-label="Sulje asetukset">✕</button>
         </div>
-        <div class="kuplafix-menu-subtitle">kuplaFix 2.1.6 - uusin</div>
+        <div class="kuplafix-menu-subtitle">kuplaFix 2.2.0 - uusin</div>
 
         <div class="kuplafix-features-list">
+
+        <div class="kuplafix-feature-card collapsed" data-feature="welcome-summary">
+          <div class="kuplafix-feature-header">
+            <div class="kuplafix-drag-handle" title="Raahaa muuttaaksesi järjestystä">⋮⋮</div>
+            <div class="kuplafix-feature-title-row">
+              <div class="kuplafix-feature-title">kirjautumisen yhteenveto</div>
+            </div>
+            <div class="kuplafix-header-controls">
+              <label class="kuplafix-toggle" title="Ota ominaisuus käyttöön tai pois">
+                <input type="checkbox" id="kf-welcome-summary" checked="">
+                <span class="kuplafix-toggle-slider"></span>
+              </label>
+              <button class="kuplafix-minimize-btn" title="Laajenna">▼</button>
+            </div>
+          </div>
+          <div class="kuplafix-feature-content">
+            <div class="kuplafix-feature-description">Näytä sisään tullessa aktiiviset huoneet, kaverit, edellisen session keskustelu ja paikalla oleva henkilökunta.</div>
+            <div class="kuplafix-feature-actions-row"><button class="kuplafix-btn-secondary" id="kuplafix-options-welcome-summary">Asetukset</button><button class="kuplafix-btn-secondary" id="kuplafix-open-welcome-summary">Avaa nyt</button></div>
+            <div class="kuplafix-feature-status">Avautuu määritetyn poissaoloajan jälkeen.</div>
+          </div>
+        </div>
 
         <div class="kuplafix-feature-card collapsed" data-feature="online-count">
           <div class="kuplafix-feature-header">
@@ -755,7 +776,7 @@ Pysyvät: Online, Merkit, Lahjat
 
     <section id="muutokset">
       <h2>Viimeisimmät päivitykset:</h2>
-      <ul class="changes"><li>Game mode: WASD-toiminnon valinta, väliaikainen kytkin ja oma pikanäppäin.</li><li>Korjattu chat-popoutin ulkoasu ja suodattimet.</li><li>Päävalikon asetukset tallentuvat automaattisesti.</li><li>Korjattu makrojen vastaanottoasetuksen tallennus.</li></ul>
+      <ul class="changes"><li>Uusi kirjautumisen yhteenveto näyttää viime käynnin, aktiiviset huoneet, kaverit ja henkilökunnan.</li><li>Navigator-henkiset huonekortit näyttävät hahmomäärän, kaverien avataripäät ja huoneen aktiivisuuteen suhteutetut kuplat.</li><li>Kaverit ryhmitellään huoneittain sävytettyihin korttiblobbeihin, joista pääsee suoraan oikeaan huoneeseen.</li><li>Edellisen session keskustelu säilyttää Kuplan ulkoasun ja jättää yhteenvetokortista pois järjestelmä-, botti- ja WIRED-viestit.</li><li>Yhteenvedon henkilökuntalista ja automaattisen avautumisen poissaoloraja ovat muokattavissa KuplaFix-valikossa.</li><li>KuplaFix-valikko on aiempaa kompaktimpi ja läpikuultavampi.</li></ul>
     </section>
   </main>
 

@@ -1,4 +1,4 @@
-# KuplaFix-julkaisu 2.1.5
+# KuplaFix-julkaisu 2.2.0
 
 KuplaFix julkaistaan suoraan GitHub-repositoriosta. ScriptCat ja muut userscript-hallinnat käyttävät automaattiseen päivitykseen tätä osoitetta:
 
