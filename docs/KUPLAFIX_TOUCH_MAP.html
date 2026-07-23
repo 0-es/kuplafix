@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KuplaFix feature &amp; touch map · v2.2.1</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1013;
+      --panel: rgba(20, 25, 30, .92);
+      --panel-2: #11191d;
+      --line: #2c414b;
+      --line-soft: #1d2b31;
+      --text: #e7eef1;
+      --muted: #93a7b0;
+      --accent: #7cc2df;
+      --green: #78d5a1;
+      --yellow: #e6c774;
+      --red: #ef8e91;
+      --purple: #c1a3ea;
+      --blue: #7fb7ed;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 12% 0%, rgba(54, 119, 145, .16), transparent 28rem),
+        var(--bg);
+      color: var(--text);
+      font: 14px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    a { color: var(--accent); }
+    code, .mono { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; }
+    .mono { overflow-wrap: anywhere; }
+    code { color: #c7e9f6; }
+
+    .shell { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 34px 0 64px; }
+    .hero {
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(145deg, rgba(24, 42, 50, .96), rgba(15, 21, 25, .96));
+      box-shadow: 0 22px 70px rgba(0, 0, 0, .34);
+    }
+    .eyebrow { color: var(--accent); font: 800 11px/1.2 "Cascadia Code", monospace; letter-spacing: .11em; text-transform: uppercase; }
+    h1 { margin: 8px 0 5px; font-size: clamp(27px, 5vw, 44px); line-height: 1.05; }
+    .lead { max-width: 860px; margin: 0; color: #b9c8ce; font-size: 15px; }
+
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; margin-top: 20px; }
+    .metric { padding: 11px 13px; border: 1px solid var(--line-soft); border-radius: 9px; background: rgba(5, 10, 12, .36); }
+    .metric strong { display: block; font-size: 17px; }
+    .metric span { color: var(--muted); font-size: 11px; }
+
+    .toolbar { position: sticky; z-index: 20; top: 0; display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: rgba(11, 16, 19, .9); backdrop-filter: blur(12px); }
+    .toolbar input { flex: 1 1 300px; min-width: 0; padding: 9px 11px; border: 1px solid #38515d; border-radius: 7px; color: var(--text); background: #0b1216; outline: none; }
+    .toolbar input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(124, 194, 223, .15); }
+    button { padding: 8px 11px; border: 1px solid #38515d; border-radius: 7px; color: var(--text); background: #172229; cursor: pointer; }
+    button:hover { border-color: var(--accent); }
+
+    .notice { margin: 14px 0; padding: 13px 15px; border: 1px solid rgba(230, 199, 116, .38); border-left: 4px solid var(--yellow); border-radius: 8px; background: rgba(84, 67, 24, .18); }
+    .notice strong { color: #f3d989; }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 7px 15px; margin: 14px 2px; color: var(--muted); font-size: 12px; }
+    .badge { display: inline-flex; align-items: center; gap: 5px; padding: 2px 7px; border: 1px solid currentColor; border-radius: 999px; font: 750 10px/1.45 "Cascadia Code", monospace; letter-spacing: .025em; text-transform: uppercase; vertical-align: middle; }
+    .always, .working { color: var(--green); }
+    .default { color: var(--blue); }
+    .optional { color: var(--purple); }
+    .partial, .review { color: var(--yellow); }
+    .broken, .risk { color: var(--red); }
+    .legacy { color: #8c9aa0; }
+
+    .tree { margin: 0; padding: 0; list-style: none; }
+    .tree ul { position: relative; margin: 0 0 0 14px; padding: 0 0 0 20px; list-style: none; }
+    .tree ul::before { content: ""; position: absolute; left: 5px; top: 0; bottom: 12px; border-left: 1px solid var(--line); }
+    .tree li { position: relative; margin: 5px 0; }
+    .tree li::before { content: ""; position: absolute; left: -15px; top: 18px; width: 13px; border-top: 1px solid var(--line); }
+    .tree > li::before { display: none; }
+    details { border-radius: 8px; }
+    summary { display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 7px 9px; border: 1px solid transparent; border-radius: 8px; cursor: pointer; list-style: none; }
+    summary::-webkit-details-marker { display: none; }
+    summary::before { content: "›"; flex: 0 0 12px; color: #6f8791; font-size: 18px; transform-origin: center; transition: transform .14s ease; }
+    details[open] > summary::before { transform: rotate(90deg); }
+    summary:hover { border-color: var(--line); background: rgba(34, 51, 59, .35); }
+    .folder { color: #edf4f6; font-weight: 760; }
+    .path { color: var(--accent); font-family: "Cascadia Code", monospace; font-weight: 700; }
+    .line { margin-left: auto; color: #667a83; font: 10px "Cascadia Code", monospace; }
+
+    .leaf { padding: 9px 11px; border: 1px solid var(--line-soft); border-radius: 8px; background: rgba(16, 24, 28, .65); }
+    .leaf-head { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
+    .leaf-title { font-weight: 730; }
+    .leaf p { margin: 5px 0 0; color: #adbdc4; }
+    .leaf ul { margin-top: 7px; }
+    .leaf code.block { display: block; overflow: auto; margin-top: 7px; padding: 9px; border-radius: 6px; color: #bcd3dc; background: #091014; white-space: pre-wrap; }
+    .finding { border-color: rgba(239, 142, 145, .28); background: rgba(73, 27, 29, .15); }
+    .finding.partial-box { border-color: rgba(230, 199, 116, .28); background: rgba(73, 60, 26, .13); }
+    .hidden { display: none !important; }
+    mark { padding: 0 2px; border-radius: 2px; color: inherit; background: rgba(124, 194, 223, .23); }
+
+    .audit-table { width: 100%; margin-top: 8px; border-collapse: collapse; font-size: 12px; }
+    .audit-table th, .audit-table td { padding: 8px; border: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
+    .audit-table th { color: #c8d7dd; background: #142026; }
+    .audit-table td { color: #aebdc3; }
+
+    footer { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line-soft); color: #748991; font-size: 11px; }
+    @media (max-width: 760px) {
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .line { display: none; }
+      .shell { width: min(100% - 18px, 1180px); }
+      .hero { padding: 18px; }
+      .tree ul { margin-left: 6px; padding-left: 12px; }
+      .tree li::before { left: -7px; width: 6px; }
+      .audit-table, .audit-table tbody, .audit-table tr, .audit-table td { display: block; width: 100%; }
+      .audit-table thead { display: none; }
+      .audit-table tr { margin-bottom: 9px; }
+      .audit-table td { overflow-wrap: anywhere; }
+      .audit-table td + td { border-top: 0; }
+      .audit-table td::before { display: block; margin-bottom: 3px; color: #6f8994; font: 700 9px "Cascadia Code", monospace; letter-spacing: .08em; text-transform: uppercase; }
+      .audit-table td:nth-child(1)::before { content: "Path"; }
+      .audit-table td:nth-child(2)::before { content: "What runs"; }
+      .audit-table td:nth-child(3)::before { content: "Assessment"; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="eyebrow">kuplaFix · feature manual</div>
+      <h1>What KuplaFix adds to the game</h1>
+      <p class="lead">A readable, source-derived guide to every feature, automatic fix and power tool in <code>kuplafix.user.js</code>. Start with the feature tree; expand the implementation map only when you need storage keys, selectors, packets, network calls or startup details.</p>
+      <div class="metrics">
+        <div class="metric"><strong>2.2.1</strong><span>audited local version</span></div>
+        <div class="metric"><strong>15</strong><span>documented mods and tools</span></div>
+        <div class="metric"><strong>20</strong><span>supporting controllers/modules</span></div>
+        <div class="metric"><strong>937</strong><span>catalogued packet names</span></div>
+      </div>
+    </header>
+
+    <div class="notice"><strong>Optimization status:</strong> The trace-tested connection-hint experiment was removed because it did not improve WebSocket setup. Disabled GIF and room-lighting features keep no observers, voice messages scan only new DOM subtrees, chat-history clicks use document capture without polling or mutation retries, online checks pause in background tabs, duplicate button retries are coalesced, and packet macros are indexed by direction and header.</div>
+
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="Find a feature: friends, GIF, microphone, packets…" aria-label="Filter touch map">
+      <button id="expand" type="button">Expand all</button>
+      <button id="collapse" type="button">Collapse all</button>
+      <button id="findings" type="button">Attention points</button>
+    </div>
+
+    <div class="legend">
+      <span><span class="badge always">always</span> initialized regardless of feature toggle</span>
+      <span><span class="badge default">default-on</span> enabled by the shipped configuration</span>
+      <span><span class="badge optional">opt-in</span> dormant until enabled</span>
+      <span><span class="badge partial">partial</span> code exists but effectiveness is incomplete or timing-dependent</span>
+      <span><span class="badge broken">attention</span> known limit, production dependency, or measurement gap</span>
+    </div>
+
+    <ul class="tree" id="tree">
+      <li>
+        <details open>
+          <summary><span class="path">00-feature-guide/</span><span class="badge default">start here</span></summary>
+          <ul>
+            <li>
+              <details open>
+                <summary><span class="folder">enabled-by-default/</span><span class="badge default">works automatically</span></summary>
+                <ul>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Login welcome summary</span><span class="badge default">default-on</span></div><p>After entering the hotel, opens one movable summary with the previous logical visit, populated rooms, every online friend, staff online and cached chat from the previous session. It stores exactly the current and previous visit. Reloading or reconnecting within one hour continues the current visit and cannot replace the previous-visit timestamp; returning after at least one hour advances the pair once. Room cards show Navigator thumbnails and friend heads; friend cards enter that friend’s current room. Friend cards are direct items in one compact three-column grid whose continuous packing path keeps every occupied-room group connected across row changes. Five-pixel group spacing is rendered by an inset background/border layer so every grid item remains the same square size. Groups receive collision-free room tints, while friends without a current room always use neutral grey.</p><code class="block">Menu: Kirjautumisen yhteenveto · Inputs: account/friend/room packets, :userson, Navigator DOM and chat cache · Stores: current/previous logical visit and card position · Controls: staff list, absence threshold and open-now button</code></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Online count in the chat box</span><span class="badge default">default-on</span></div><p>Replaces the chat placeholder with the current hotel population and refreshes it at the configured interval. It restores the original placeholder when disabled, prevents overlapping requests and skips checks while the tab is hidden.</p><code class="block">Menu: Kävijämäärä chatboxissa · Network: /api/online-count · Default: 60 seconds · Minimum: 5 seconds</code></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Persistent notification bubbles</span><span class="badge default">default-on</span></div><p>Lets selected Nitro notifications remain visible instead of disappearing on the native timer. KuplaFix clones persistent bubbles, can add timestamps, de-duplicates repeated content and supports click or shift-click dismissal.</p><code class="block">Menu: Säilytä ilmoitukset · Types: friend status, achievements, badges, gifts, respect and currencies</code></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Chat history and session cache</span><span class="badge default">default-on</span></div><p>Replaces the native history button with a searchable KuplaFix window and optional popout. It preserves rendered chat across logins, inserts session separators, supports system/bot/WIRED filters and highlights the last message from the previous session.</p><code class="block">Menu: Chat-historia · Default storage: 1,000 messages for 7 days · Welcome excerpt excludes system, bot and WIRED messages</code></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Compact event invitations</span><span class="badge always">automatic fix</span></div><p>Hides the intrusive hotel-event window and recreates its title, image and room action as a compact notification. The selector matches Nitro’s separate <code>nitro-alert-hotel</code> and <code>event</code> classes.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Update indicator</span><span class="badge default">menu-triggered</span></div><p>Checks the GitHub userscript version when the KuplaFix menu opens and turns the subtitle into an install link when a newer version exists. It does not check on page load and is throttled to once per minute.</p></div></li>
+                </ul>
+              </details>
+            </li>
+            <li>
+              <details open>
+                <summary><span class="folder">optional-mods/</span><span class="badge optional">off until enabled</span></summary>
+                <ul>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">GIF controls</span><span class="badge optional">opt-in</span></div><p>Handles GIF chat in three real modes: spoiler click-to-reveal, allow only selected usernames, or hide every GIF message. The menu manages the username whitelist and now uses the correct configuration key.</p><code class="block">Menu: Piilota gifit · Modes: spoiler, allow-selected, block-all · Observer exists only while enabled</code></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Room lighting</span><span class="badge optional">opt-in</span></div><p>Applies brightness and warm night-light filtering directly to room canvases. Sliders and presets adjust brightness, sepia, hue and saturation; filters are reapplied when Nitro replaces the canvas.</p><code class="block">Menu: Huonevalaistus · Observer exists only while enabled · Changes canvas filter and transition styles</code></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Game mode</span><span class="badge optional">opt-in</span></div><p>Turns WASD into room movement or one-character quick chat. Other letters and numbers can be sent immediately, while a temporary toggle above chat pauses the mode without changing the saved main setting.</p><code class="block">Menu: Game mode · Controls: WASD behavior and temporary hotkey · Captures keydown/keyup in both documents</code></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Voice messages</span><span class="badge optional">opt-in</span></div><p>Adds a press-and-hold or double-click recorder beside chat. Audio is resampled and encoded into a KuplaFix payload or uploaded through the configured bridge; other KuplaFix clients render playback chips with waveform progress.</p><code class="block">Menu: Ääniviestit · Permission: microphone · Uses MediaRecorder and AudioContext · Scans only new chat subtrees</code></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">LiveKit meetings</span><span class="badge optional">opt-in</span></div><p>Adds a sidebar button for a draggable embedded LiveKit meeting. It requests a short-lived token and permits camera, microphone, screen sharing, autoplay and clipboard write inside the meeting iframe.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">In-game Kupla front page</span><span class="badge optional">opt-in</span></div><p>Adds a home button and opens the Kuplahotelli front page in a draggable sandboxed overlay without leaving the game. The page can also be moved into a separate browser window.</p></div></li>
+                </ul>
+              </details>
+            </li>
+            <li>
+              <details open>
+                <summary><span class="folder">power-tools/</span><span class="badge review">advanced</span></summary>
+                <ul>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Renderer and UI config overrides</span><span class="badge optional">opt-in</span></div><p>Accepts JSON overrides for Nitro’s <code>renderer-config.json</code> and <code>ui-config.json</code>. KuplaFix wraps fetch and XHR, changes only matching responses and returns untouched responses without issuing a duplicate request.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Packet Builder, filters, logger and history</span><span class="badge review">advanced</span></div><p>Captures the Hanarchy WebSocket, names known headers, displays bounded incoming/outgoing history while the builder is open, parses typed fields and can send or inject constructed packets. Persisted header filters can block either direction or rebuild selected parsed arguments while preserving every unlisted live value. Visual logging is persisted separately and is off by default.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Packet macros and sharing</span><span class="badge review">advanced</span></div><p>Runs conditional send, inject, toast and delay actions for matching packets. Enabled macros are indexed by direction/header instead of scanning every macro for every packet. <code>KFM2:</code> macros can be shared through chat or trophies with a trusted-sender safeguard.</p></div></li>
+                </ul>
+              </details>
+            </li>
+            <li>
+              <details>
+                <summary><span class="folder">kuplafix-framework/</span><span class="badge always">support layer</span></summary>
+                <ul>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Settings interface</span></div><p>Adds the toolbar/sidebar button, draggable translucent menu, ordered and collapsible feature cards, automatic saves, status text, toasts and reset controls.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Userscript and bookmarklet startup</span></div><p>Prevents duplicate instances, runs from the top document, injects shared styles and rebinds modules whenever the same-origin Nitro iframe changes. Bookmarklet mode preserves the complete SSO URL while restarting the client for early socket hooks.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Public integration API</span></div><p>Exports <code>window.kuplafix</code>, <code>window.kuplaSocket</code>, typed packet helpers, listener/interceptor APIs, configuration access and update-test helpers for debugging and companion mods.</p></div></li>
+                </ul>
+              </details>
+            </li>
+          </ul>
+        </details>
+      </li>
+
+      <li>
+        <details>
+          <summary><span class="path">01-implementation-touch-map/</span><span class="badge always">technical reference</span></summary>
+          <ul>
+            <li>
+              <details open>
+                <summary><span class="folder">00-bootstrap/</span><span class="badge always">always</span><span class="line">1–594</span></summary>
+                <ul>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">userscript-metadata</span><span class="badge always">document-start</span></div><p>Matches <code>*://kuplahotelli.com/game/nitro*</code>, declares <code>@noframes</code>, and requests GM value/XMLHTTP plus window focus/close grants. The first runtime guard exits inside frames, so the userscript itself starts in the top document.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">bookmarklet lifecycle</span><span class="badge partial">special path</span></div><p>Consumes <code>window.__KUPLAFIX_BOOKMARKLET_BOOT__</code>, suspends Nitro DOM callbacks, reloads the same-origin <code>#nitro</code> iframe with its original SSO URL, then installs the socket hook in the fresh window. Packet interception is explicitly described in source as deterministic only in document-start userscript mode.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">singleton and exported globals</span><span class="badge always">always</span></div><p>Reads/writes <code>window.__kuplafix_singleton__</code>. Exports <code>window.kuplafix</code> (version, config, UI, cache, welcome, packet tools and test helpers) and <code>window.kuplaSocket</code> after capturing the game socket.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">GM fallback</span><span class="badge partial">bookmarklet</span></div><p>If GM APIs are absent, stores values as JSON in same-origin <code>localStorage</code> using the prefix <code>kuplafix_gm_</code>, and emulates <code>GM_xmlhttpRequest</code> with <code>fetch</code>.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">DOM lifecycle broker</span><span class="badge always">always</span></div><p>Touches the top document and same-origin <code>#nitro</code> iframe. It observes iframe replacement, rejects <code>about:blank</code>, exposes cross-document query/wait/inject helpers, and replays callbacks when a real Nitro document becomes available.</p><code class="block">Primary surfaces: document, document.body, document.documentElement, #nitro, iframe.contentDocument, iframe.defaultView</code></div></li>
+                </ul>
+              </details>
+            </li>
+
+            <li>
+              <details>
+                <summary><span class="folder">01-persistent-state/</span><span class="badge default">GM storage</span><span class="line">158–274, 4082–4263, 6235–6535, 7662–10093, 12907–13768</span></summary>
+                <ul>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">kuplafix_config</span><span class="badge always">loaded</span></div><p>Main object merged with defaults. Unknown keys are rejected by <code>config.set()</code>.</p><code class="block">welcomeSummaryEnabled = true
+welcomeSummaryPosition = null
+welcomeSummaryStaffUsernames = [Laatikko, Nappi, craimsson]
+welcomeSummaryMinAwayMinutes = 60
+browserEnabled = false
+onlineCountEnabled = true · onlineCountInterval = 60000
+gifBlockerEnabled = false · gifBlockerMode = spoiler · gifBlockerWhitelist = []
+bubbleAlertsEnabled = true · bubbleAlertsShowTimestamp = true · bubbleAlertsAutoDespawn = per-type object
+menuPosition = null
+livekitEnabled = false · livekitTokenEndpoint = kuplafix-livekit-auth worker
+voiceMessagesEnabled = false · voiceHideRecordButton = false
+voiceMessageCharLimit = 100 · voiceMessageMaxDurationMs = 4000 · voiceMessageSampleRate = 8000
+voiceMessageUploadUrl = kuplafix-voice-worker upload
+chatHistoryCacheEnabled = true · chatHistoryCacheSize = 1000 · chatHistoryCacheExpiry = 7 days
+gameModeEnabled = false · gameModeWasdBehavior = movement · gameModeToggleKey = -
+roomLightingEnabled = false · roomBrightness = 1 · roomTemperature = 0
+rendererConfigHijackEnabled = false · rendererConfigOverrides = {} · uiConfigOverrides = {}
+packetLoggingEnabled = false
+packetFilters = [] · packetMacros = []
+ignoredOutgoingHeaders = [] · ignoredIncomingHeaders = []
+acceptAllMacroNotifications = false
+featureOrder = [welcome summary → packet tools] · collapsedFeatures = {}</code></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">kuplafix_chat_cache</span><span class="badge default">default-on</span></div><p>Stores up to 1,000 cached message objects by default: rendered message HTML, username, avatar/background metadata, bubble classes/style ID, timestamps and a per-login session ID. Entries older than seven days are removed on load.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">kuplafix_welcome_state_v1</span><span class="badge default">default-on</span></div><p>Stores per-account username, exactly two logical visit records (current and previous), room summary, friend locations and configured staff locations. Old multi-entry visit history is read once for migration but is not written back. It does not persist the raw all-users <code>:userson</code> response.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">update keys</span><span class="badge default">menu-triggered</span></div><code class="block">kuplafix_last_update_check
+kuplafix_latest_version
+kuplafix_pending_update
+kuplafix_update_notification_shown (declared, separate notification currently disabled)</code></div></li>
+                </ul>
+              </details>
+            </li>
+
+            <li>
+              <details>
+                <summary><span class="folder">02-injected-interface/</span><span class="badge always">DOM + CSS</span><span class="line">595–3852</span></summary>
+                <ul>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Styles</span><span class="badge always">always</span></div><p>Injects one large <code>#kuplafix-styles</code> bundle into the top document and Nitro document. It styles menus, toolbar controls, notification clones, chat history/popout, voice controls, room lighting controls, packet tools, browser overlay, game-mode toggle and welcome summary.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">UI menu</span><span class="badge always">always</span></div><p>Adds a KuplaFix toolbar/sidebar button, movable settings menu, ordered/collapsible feature cards, toggles, settings forms, toasts and stored menu coordinates. It searches Nitro toolbar layouts and re-adds itself after iframe/client rerenders.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">high-value native selectors</span><span class="badge review">fragile contracts</span></div><code class="block">#nitro
+.nitro-toolbar-main-icons · .nitro-toolbar-firstview · .side-toolbar-container
+.nitro-chat-input-container · .nitro-chat-input-control · .nitro-chat-widget
+.chat-bubble · .bubble-container · .message · .username · .user-image
+.nitro-right-side · .nitro-notification-bubble
+.nitro-navigator .navigator-item
+.roomView-background canvas and four canvas fallbacks
+#draggable-windows-container · .nitro-alert-motd
+.friend-bar-horizontal-item · .friend-username</code><p>The source contains 183 literal selector strings plus generated selectors. Native class-name changes can break these integrations without a compile-time error.</p></div></li>
+                </ul>
+              </details>
+            </li>
+
+            <li>
+              <details open>
+                <summary><span class="folder">03-feature-controllers/</span><span class="badge default">mixed activation</span><span class="line">3853–7661, 12159–13810</span></summary>
+                <ul>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">ChatInputObserver</span><span class="badge always">always</span></div><p>Mutation-observes top/Nitro documents for chat input creation, then reattaches online count, voice controls and game-mode toggle. One observer is retained per document.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">ChatEnhancements / online count</span><span class="badge default">default-on</span></div><p>Calls <code>/api/online-count</code>, writes “N hahmoa paikalla” into the native chat placeholder, suppresses overlapping requests, and repeats every configured interval (60 seconds by default).</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">UpdateChecker</span><span class="badge default">on menu open</span></div><p>Fetches the raw GitHub userscript with a timestamp query, extracts <code>@version</code>, caches the result and turns the menu subtitle into an install link when newer. Page-load checks are intentionally disabled.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">GifBlocker</span><span class="badge optional">opt-in</span></div><p>While enabled, Mutation-observes both documents, debounces rescans by 150 ms, finds Nitro GIF bubbles and supports whitelist, reveal-placeholder, non-whitelisted hide, or hide-all behavior. Disabling restores hidden content and disconnects its observers.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">RoomLighting</span><span class="badge optional">opt-in</span></div><p>Finds room canvases and applies CSS <code>brightness</code>, <code>sepia</code>, <code>hue-rotate</code> and <code>saturate</code> filters. Its 120 ms debounced observer exists only while the feature is enabled.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">LiveKit</span><span class="badge optional">opt-in</span></div><p>Adds a sidebar entry, reads the logged-in username, fetches a token URL from the configured worker, and embeds <code>meet.livekit.io/custom</code> in an iframe allowed to use camera, microphone, display capture, autoplay and clipboard-write.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">BubbleAlerts</span><span class="badge default">default-on</span></div><p>Observes native right-side notification bubbles. Depending on per-type auto-despawn settings, it timestamps native bubbles or clones them into <code>#kuplafix-notification-clones</code>, hides the original, de-duplicates matching content for ten seconds, and supports click/shift-click dismissal.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">ChatHistoryUI</span><span class="badge default">default-on</span></div><p>Intercepts native history controls during document capture in both the top and Nitro documents, so React can replace the button without creating a native-history race. The handler recognizes the current Finnish title, English title variants and the legacy room-tools icon; disabling the feature leaves Nitro’s native click untouched. It creates a custom history window, filter controls and an optional <code>window.open</code> popout, copies source styles into the popout and mirrors search/system/bot/WIRED filters.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">ChatHistoryCache</span><span class="badge default">default-on</span></div><p>Observes direct children of the native chat widget, captures newly rendered bubbles, rejects near-duplicates, caps the array, saves after a two-second debounce, restores cached bubbles, inserts session dividers and briefly highlights the final message from the previous login.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">VoiceMessages</span><span class="badge optional">opt-in</span></div><p>Adds a press/hold/double-click record control. Uses <code>getUserMedia</code>, <code>MediaRecorder</code>, <code>AudioContext</code>, resampling/ADPCM-like text encoding, optional worker upload, incremental added-subtree scanning, object URLs, playback chips and animation-frame progress.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">EventInviteBlocker</span><span class="badge always">always</span></div><p>Watches <code>#draggable-windows-container</code>, hides matching event invitation windows and recreates their text/image/action as compact KuplaFix notifications.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">Browser</span><span class="badge optional">opt-in</span></div><p>Adds a sidebar button and draggable overlay containing a sandboxed same-origin iframe. Closing navigates it to <code>about:blank</code>; opening defaults to the Kuplahotelli front page; popout uses <code>window.open</code>.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">GameMode</span><span class="badge optional">opt-in</span></div><p>Captures keydown/keyup in both documents. WASD either clicks/dispatched arrow controls or sends one-character chat messages. It blocks normal single-character input while active and adds a temporary toggle above chat.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">LoginWelcome</span><span class="badge default">default-on</span></div><p>Listens to account/friend/room packets, sends <code>:userson</code>, suppresses its generic-alert response, parses room membership, closes visible MOTD responses, reads Navigator thumbnails and friend-bar avatars, stores current/previous logical visits, and renders the movable once-per-login summary. A saved activity gap under one hour resumes the current logical visit; a gap of one hour or more moves it to the previous slot. Migration collapses the former reload snapshot chain into the same two-slot model. Friend cards are positioned directly in a compact three-column grid. Its continuous cell path and coordinate-based neighbor lookup keep each room blob connected and merge only true neighbors. Group gaps change pseudo-layer insets instead of margins, preserving identical card geometry for top-only, left-only and combined boundaries. It allocates one stable tint per occupied friend-room group and explicitly applies a grey palette to roomless friends.</p></div></li>
+                </ul>
+              </details>
+            </li>
+
+            <li>
+              <details>
+                <summary><span class="folder">04-network-boundaries/</span><span class="badge review">external I/O</span></summary>
+                <ul>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">HTTP / fetch / GM_xmlhttpRequest</span></div><code class="block">https://kuplahotelli.com/api/online-count — online count
+https://raw.githubusercontent.com/0-es/kuplafix/main/kuplafix.user.js — update check
+https://kuplafix-livekit-auth.kuplafix.workers.dev/ — configured LiveKit token service
+https://meet.livekit.io/custom — embedded meeting client
+wss://kuplafix-2tcupftb.livekit.cloud — passed to meeting flow
+https://kuplafix-voice-worker.kuplafix.workers.dev/upload — voice upload/lookup base
+https://kuplahotelli.com/?figure=…&amp;headonly=1 — friend/avatar renderer
+https://images.habbo.com/.../sticker_walkingMechaDog.gif — packet-tool decorative icon</code></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">same-origin navigations and media</span></div><p>Reloads the Nitro iframe in bookmarklet mode; sets iframe sources for Kuplahotelli and LiveKit; loads Navigator room thumbnails, avatar images, notification imagery, voice blobs and the incognito gift icon.</p></div></li>
+                </ul>
+              </details>
+            </li>
+
+            <li>
+              <details>
+                <summary><span class="folder">05-websocket-and-packets/</span><span class="badge always">global hook</span><span class="line">7662–12158</span></summary>
+                <ul>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">WebSocket replacement</span><span class="badge always">always</span></div><p>Replaces <code>window.WebSocket</code> and patches the original prototype's <code>send</code>. Only URLs containing <code>hanarchy.net</code> are captured. Indexed header filters run before the game/server sees a packet; accepted packets then go through macro/listener/interceptor machinery. Bounded hexadecimal history is allocated only while Packet Builder is open.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">operational packet IDs</span><span class="badge working">direct use</span></div><code class="block">IN  2725 USER_INFO — logged-in account for welcome state
+IN  3130 MESSENGER_FRIENDS — initial friend roster
+IN  2800 MESSENGER_UPDATE — friend changes
+IN   758 ROOM_ENTER — triggers automatic welcome flow once
+IN  3801 GENERIC_ALERT — intercepted for :userson response; may be suppressed
+OUT 1314 UNIT_CHAT — :userson and optional shared-macro chat message
+OUT 2312 ROOM_ENTER — welcome-card room navigation
+OUT 3492 CATALOG_PURCHASE — optional bronze trophy containing a shared macro</code></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">packet catalogue</span><span class="badge review">reference data</span></div><p>The builder contains 468 outgoing and 469 incoming symbolic names. Merely cataloguing an ID does not send or intercept it. The packet builder and user-created macros can, however, send/inject arbitrary headers and typed arguments.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">header filters</span><span class="badge review">user-driven</span></div><p>Enabled filters are indexed by <code>direction:header</code>. A block rule suppresses the matching binary packet. A modify rule runs the Builder parser on each live packet, replaces only configured zero-based argument indexes, rebuilds the packet with typed values and forwards the result. Incoming synthetic replacement events bypass the filter once to prevent recursion.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">macros and sharing</span><span class="badge optional">user-driven</span></div><p>Macros trigger on matching packet direction/header, parse arguments, evaluate comparisons, substitute <code>{{argN}}</code>, then send, inject, delay or show a toast. Shared <code>KFM2:</code> payloads are detected in chat and trophy/furniture data; acceptance defaults to the hardcoded trusted sharer unless “accept all” is enabled.</p></div></li>
+                </ul>
+              </details>
+            </li>
+
+            <li>
+              <details>
+                <summary><span class="folder">06-browser-platform-apis/</span><span class="badge review">capabilities</span></summary>
+                <ul>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">observation and scheduling</span></div><p>Uses many <code>MutationObserver</code> instances, plus <code>setTimeout</code>, <code>setInterval</code>, <code>requestAnimationFrame</code>, <code>queueMicrotask</code>, page lifecycle events and DOMContentLoaded. There are no Web Workers or IndexedDB paths.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">media</span></div><p><code>navigator.mediaDevices.getUserMedia</code>, <code>MediaRecorder</code>, <code>AudioContext</code>/<code>webkitAudioContext</code>, <code>Audio</code>, <code>Blob</code>, <code>FileReader</code>, and object URLs are used by voice messages and packet Blob decoding.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">user interaction</span></div><p>Captures mouse, pointer, touch, keyboard, drag-and-drop, input/change, form submit, window message, iframe load, clipboard write, legacy <code>document.execCommand('copy')</code>, popup windows and new tabs.</p></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">rendering</span></div><p>Does not draw to Canvas directly; it changes native room canvas CSS filters. It heavily injects DOM/CSS and clones native Nitro nodes. Avatar/thumbnail pixels are sourced from Kupla endpoints and Navigator DOM.</p></div></li>
+                </ul>
+              </details>
+            </li>
+
+            <li>
+              <details open>
+                <summary><span class="folder">07-optimization-audit/</span><span class="badge working">applied</span></summary>
+                <ul>
+                  <li><div class="leaf"><table class="audit-table">
+                    <thead><tr><th>Path</th><th>What runs</th><th>Assessment</th></tr></thead>
+                    <tbody>
+                      <tr><td>Renderer/UI overrides</td><td>Clones and parses one matching fetch response; rewrites it only when overrides exist.</td><td><span class="badge working">fixed</span> Untouched responses are returned directly instead of performing a second network request.</td></tr>
+                      <tr><td>Optional observers</td><td>GIF and room-lighting observers are created on enable and disconnected on disable.</td><td><span class="badge working">optimized</span> Default-off features now have no mutation-observer cost.</td></tr>
+                      <tr><td>Voice playback discovery</td><td>Scans existing chat once, then examines only added nodes and their descendants.</td><td><span class="badge working">optimized</span> Whole-document scans no longer run after unrelated mutations.</td></tr>
+                      <tr><td>Chat history button</td><td>Uses one delegated document-capture listener per top/Nitro document.</td><td><span class="badge working">race-free</span> React replacements are intercepted immediately without a mutation observer, rebind delay or watchdog interval.</td></tr>
+                      <tr><td>Online count</td><td>One request at a time, one coalesced input retry and no requests while the page is hidden.</td><td><span class="badge working">optimized</span> Visibility restores an immediate refresh.</td></tr>
+                      <tr><td>Packet macros</td><td>Builds an index of enabled macros keyed by direction and header.</td><td><span class="badge working">optimized</span> Unrelated packets no longer scan the entire macro array.</td></tr>
+                      <tr><td>Packet filters</td><td>Builds an index of enabled block/modify rules keyed by direction and header.</td><td><span class="badge working">indexed</span> Packets without a matching rule pay one map lookup and are not parsed.</td></tr>
+                      <tr><td>Packet names/history</td><td>Header-name maps are built once; packet history is created only while the builder is open and remains capped at 50 per direction.</td><td><span class="badge working">bounded</span> Avoids repeated catalogue scans and idle history allocation.</td></tr>
+                      <tr><td>Chat cache</td><td>Two-second save debounce, maximum length and expiry filtering.</td><td><span class="badge working">bounded</span> Reduces GM writes and limits persistent history.</td></tr>
+                      <tr><td>Retry timers</td><td>UI, LiveKit and browser button insertion each keep at most one outstanding retry.</td><td><span class="badge working">optimized</span> Repeated iframe callbacks cannot multiply retry loops.</td></tr>
+                    </tbody>
+                  </table></div></li>
+                </ul>
+              </details>
+            </li>
+
+            <li>
+              <details>
+                <summary><span class="folder">08-attention-points/</span><span class="badge review">know the limits</span></summary>
+                <ul>
+                  <li><div class="leaf finding partial-box"><div class="leaf-head"><span class="leaf-title">Renderer overrides are startup-sensitive</span><span class="badge partial">reload required</span></div><p>Changing renderer/UI JSON in the menu cannot retroactively change configuration Nitro already fetched. Save the setting and reload; document-start userscript mode gives the earliest and most reliable hook.</p></div></li>
+                  <li><div class="leaf finding partial-box"><div class="leaf-head"><span class="leaf-title">Bookmarklet socket timing is best-effort</span><span class="badge partial">known limit</span></div><p>The bookmarklet safely restarts the same-origin iframe and preserves SSO parameters, but deterministic interception of the very first WebSocket still belongs to userscript document-start mode.</p></div></li>
+                  <li><div class="leaf finding partial-box"><div class="leaf-head"><span class="leaf-title">Nitro class names remain external contracts</span><span class="badge review">maintenance</span></div><p>KuplaFix integrates with native DOM classes and packet formats from an abandoned client. A server/client markup change can break a feature without a JavaScript syntax error.</p></div></li>
+                  <li><div class="leaf finding partial-box"><div class="leaf-head"><span class="leaf-title">Performance improvements are code-verified, not benchmarked</span><span class="badge review">measurement</span></div><p>The removed downloads, intervals and full-document scans are directly verifiable. The repository still lacks a repeatable cold/warm load benchmark against production.</p></div></li>
+                </ul>
+              </details>
+            </li>
+
+            <li>
+              <details>
+                <summary><span class="folder">09-startup-order/</span><span class="badge always">runtime</span><span class="line">13811–13901</span></summary>
+                <ul>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">parse-time</span></div><code class="block">config.load()
+ConfigHijacker.init() only when rendererConfigHijackEnabled
+PacketManager.init() → WebSocket hook, header maps, indexed filters and indexed macros
+LoginWelcome.init() → packet listeners/interceptor</code></div></li>
+                  <li><div class="leaf"><div class="leaf-head"><span class="leaf-title">DOM/global startup</span></div><code class="block">Styles → UI → ChatHistoryUI → ChatEnhancements → ChatInputObserver → GameMode → GifBlocker → RoomLighting → BubbleAlerts → UpdateChecker → LiveKit → ChatHistoryCache → EventInviteBlocker → VoiceMessages → Browser</code><p>The controller <code>init()</code> methods run once, but many register Nitro-document callbacks that run again after iframe replacement.</p></div></li>
+                </ul>
+              </details>
+            </li>
+          </ul>
+        </details>
+      </li>
+    </ul>
+
+    <footer>
+      Generated from the local KuplaFix v2.2.1 source on 2026-07-23. Source snapshot: 556,095 bytes · 13,901 lines · SHA-256 <span class="mono">878f4d4ebbafe4acb6256924b24f14788e305509c69e09f7fe4e5463e499159a</span>. This is a static code audit: “works” means the implementation path is internally connected, not that a controlled production benchmark was run.
+    </footer>
+  </main>
+
+  <script>
+    const tree = document.getElementById('tree');
+    const search = document.getElementById('search');
+    const allDetails = () => [...tree.querySelectorAll('details')];
+    const allItems = () => [...tree.querySelectorAll('li')];
+
+    function applyFilter() {
+      const query = search.value.trim().toLocaleLowerCase('en');
+      allItems().forEach(item => item.classList.remove('hidden'));
+      if (!query) return;
+      [...allItems()].reverse().forEach(item => {
+        const ownText = item.textContent.toLocaleLowerCase('en');
+        const childVisible = [...item.querySelectorAll(':scope > ul > li')].some(child => !child.classList.contains('hidden'));
+        item.classList.toggle('hidden', !ownText.includes(query) && !childVisible);
+      });
+      allDetails().forEach(detail => {
+        if (!detail.closest('li.hidden')) detail.open = true;
+      });
+    }
+
+    search.addEventListener('input', applyFilter);
+    document.getElementById('expand').addEventListener('click', () => allDetails().forEach(detail => { detail.open = true; }));
+    document.getElementById('collapse').addEventListener('click', () => allDetails().forEach((detail, index) => { detail.open = index === 0; }));
+    document.getElementById('findings').addEventListener('click', () => {
+      search.value = 'attention';
+      allItems().forEach(item => item.classList.toggle('hidden', !item.querySelector('.finding') && !item.classList.contains('finding')));
+      allDetails().forEach(detail => { detail.open = !detail.closest('li.hidden'); });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>KuplaFix browser smoke test</title>
+  <link rel="icon" href="data:,">
+  <style>
+    body { color: #e7eef1; background: #0b1013; font: 14px system-ui; }
+    #results { margin: 20px; padding: 16px; border: 1px solid #2c414b; border-radius: 8px; }
+    .pass { color: #78d5a1; }
+    .fail { color: #ef8e91; }
+  </style>
+  <script>
+    const smokeConfig = {
+      welcomeSummaryEnabled: false,
+      browserEnabled: false,
+      onlineCountEnabled: false,
+      gifBlockerEnabled: false,
+      bubbleAlertsEnabled: false,
+      livekitEnabled: false,
+      voiceMessagesEnabled: false,
+      chatHistoryCacheEnabled: false,
+      gameModeEnabled: false,
+      roomLightingEnabled: false,
+      rendererConfigHijackEnabled: true,
+      rendererConfigOverrides: { optimized: true },
+      uiConfigOverrides: {}
+    };
+    localStorage.setItem('kuplafix_gm_kuplafix_config', JSON.stringify(smokeConfig));
+    localStorage.setItem('kuplafix_gm_kuplafix_last_update_check', JSON.stringify(Date.now()));
+
+    window.__smokeFetchCalls = [];
+    window.fetch = async (input) => {
+      const url = typeof input === 'string' ? input : input?.url || String(input);
+      window.__smokeFetchCalls.push(url);
+      if (url.includes('renderer-config.json')) {
+        return new Response(JSON.stringify({ native: true }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
+    };
+
+    class SmokeWebSocket extends EventTarget {
+      static OPEN = 1;
+      constructor(url) { super(); this.url = url; this.readyState = SmokeWebSocket.OPEN; this.sent = []; }
+      send(data) { this.sent.push(data); }
+    }
+    window.WebSocket = SmokeWebSocket;
+  </script>
+</head>
+<body>
+  <div class="side-toolbar-container"></div>
+  <div class="nitro-right-side"><div class="d-flex position-relative flex-column"><div class="d-flex flex-column nitro-purse-container"></div><div class="d-flex flex-column"></div></div></div>
+  <div id="draggable-windows-container"></div>
+  <div class="nitro-chat-input-container"><input class="nitro-chat-input-control" placeholder="Chat"></div>
+  <div class="nitro-chat-widget"></div>
+  <button title="Keskusteluhistoria">History</button>
+  <div id="results">Running…</div>
+
+  <script src="../kuplafix.user.js"></script>
+  <script>
+    window.addEventListener('load', async () => {
+      const results = document.getElementById('results');
+      const checks = [];
+      const check = (name, condition, details = '') => checks.push({ name, pass: !!condition, details });
+      const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+      await delay(150);
+
+      const api = window.kuplafix;
+      check('public API exported', !!api);
+
+      const fetchesBeforeConfig = window.__smokeFetchCalls.length;
+      const rendererResponse = await window.fetch('/renderer-config.json');
+      const rendererData = await rendererResponse.json();
+      check('renderer override is applied', rendererData.native === true && rendererData.optimized === true);
+      check('renderer config is fetched once', window.__smokeFetchCalls.length - fetchesBeforeConfig === 1);
+
+      api.openMenu();
+      await delay(50);
+      check('packet logging has a persisted default', api.config.get('packetLoggingEnabled') === false);
+      const gifModes = [...document.querySelectorAll('#kuplafix-gif-mode-select option')].map((option) => option.value).join(',');
+      check('GIF menu exposes all real modes', gifModes === 'spoiler,allow-selected,block-all', gifModes);
+
+      const originalChatHistoryEnabled = api.config.get('chatHistoryCacheEnabled');
+      api.config.set('chatHistoryCacheEnabled', true);
+      await api.chatUI.init();
+      const originalHistoryButton = document.querySelector('[title="Keskusteluhistoria"]');
+      const replacementHistoryButton = document.createElement('button');
+      replacementHistoryButton.title = 'Chat history';
+      replacementHistoryButton.innerHTML = '<svg><path d="M0 0"></path></svg>';
+      let nativeHistoryOpens = 0;
+      replacementHistoryButton.addEventListener('click', () => { nativeHistoryOpens++; });
+      originalHistoryButton.replaceWith(replacementHistoryButton);
+      api.chatUI.toggle(false);
+      replacementHistoryButton.querySelector('path').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      check('fresh React history button is intercepted without a rebind delay', api.chatUI.isVisible && nativeHistoryOpens === 0);
+      api.chatUI.toggle(false);
+      api.config.set('chatHistoryCacheEnabled', false);
+      replacementHistoryButton.click();
+      check('native history remains available when KuplaFix history is disabled', nativeHistoryOpens === 1 && !api.chatUI.isVisible);
+      api.config.set('chatHistoryCacheEnabled', originalChatHistoryEnabled);
+
+      api.packets.macros = [
+        { id: 1, enabled: true, trigger: { direction: 'receive', header: 321 }, actions: [] },
+        { id: 2, enabled: true, trigger: { direction: 'send', header: 123 }, actions: [] },
+        { id: 3, enabled: false, trigger: { direction: 'receive', header: 321 }, actions: [] }
+      ];
+      api.packets.rebuildMacroIndex();
+      check('packet macros are indexed by direction/header', api.packets._macroIndex.get('receive:321')?.length === 1 && api.packets._macroIndex.get('send:123')?.length === 1);
+
+      const socket = new WebSocket('wss://smoke.hanarchy.net/websocket');
+      api.packets.addFilter({ direction: 'OUT', header: 4321, action: 'block', modifications: [] });
+      socket.send(api.packets.createPacket(4321, [api.packets.types.Int(7)]));
+      check('outgoing packet filters can block by header', socket.sent.length === 0);
+
+      api.packets.addFilter({ direction: 'OUT', header: 1314, action: 'modify', modifications: [{ index: 0, type: 'String', value: 'after' }] });
+      socket.send(api.packets.createPacket(1314, [api.packets.types.String('before'), api.packets.types.Int(4), api.packets.types.Int(5)]));
+      const modifiedOut = api.packets.parsePacket(socket.sent[0], 1314);
+      check('outgoing packet filters rebuild selected parsed arguments', modifiedOut[0]?.value === 'after' && modifiedOut[1]?.value === 4 && modifiedOut[2]?.value === 5);
+
+      api.packets.addFilter({ direction: 'IN', header: 4322, action: 'modify', modifications: [{ index: 0, type: 'Int', value: 42 }] });
+      let incomingValue = null;
+      socket.addEventListener('message', (event) => { incomingValue = api.packets.parsePacket(event.data, 4322)[0]?.value; });
+      socket.dispatchEvent(new MessageEvent('message', { data: api.packets.createPacket(4322, [api.packets.types.Int(7)]) }));
+      check('incoming packet filters rebuild before client listeners', incomingValue === 42);
+
+      api.packets.addFilter({ direction: 'IN', header: 4323, action: 'block', modifications: [] });
+      let blockedIncomingSeen = false;
+      socket.addEventListener('message', (event) => {
+        if (new DataView(event.data).getInt16(4) === 4323) blockedIncomingSeen = true;
+      });
+      socket.dispatchEvent(new MessageEvent('message', { data: api.packets.createPacket(4323, [api.packets.types.Int(7)]) }));
+      check('incoming packet filters can block by header', blockedIncomingSeen === false);
+
+      api.builder.activeTab = 'filters';
+      api.builder.open();
+      check('Packet Builder exposes a Filters tab', [...api.builder.window.children[1].children].some((tab) => tab.textContent === 'Filters'));
+      api.builder.close();
+
+      api.welcome.rooms = [];
+      api.welcome.resetRoomTints([101, 108]);
+      check('different room blobs cannot collide on tint', api.welcome.roomTint(101).join('|') !== api.welcome.roomTint(108).join('|'));
+      const roomlessFriend = api.welcome.makeFriendCard(document, { username: 'Roomless', roomId: '', roomName: '' }, true);
+      check('roomless friends always use the neutral grey tint', roomlessFriend.style.getPropertyValue('--kf-room-tint') === api.welcome.neutralRoomTint()[0]);
+
+      const capturedBlobFriends = [
+        ...Array.from({ length: 7 }, (_, index) => ({ id: index + 1, username: `Turvakoti ${index + 1}`, roomId: 101, roomName: 'Turvakoti' })),
+        ...Array.from({ length: 3 }, (_, index) => ({ id: index + 20, username: `Room B ${index + 1}`, roomId: 202, roomName: 'Room B' })),
+        { id: 40, username: 'Room C 1', roomId: 303, roomName: 'Room C' }
+      ];
+      const blobSection = api.welcome.makeFriendGroupsSection(document, capturedBlobFriends);
+      const blobGrid = blobSection.querySelector('.kuplafix-welcome-friend-groups');
+      const blobCards = [...blobGrid.querySelectorAll(':scope > .kuplafix-welcome-friend')];
+      const positionKey = (card) => `${card.dataset.gridRow}:${card.dataset.gridColumn}`;
+      const occupiedPositions = new Set(blobCards.map(positionKey));
+      const expectedPositions = new Set(Array.from({ length: 11 }, (_, index) => `${Math.floor(index / 3)}:${index % 3}`));
+      check('captured 7+3+1 blobs use one flat compact grid', blobCards.length === 11 && !blobGrid.querySelector('.kuplafix-welcome-friend-room-blob') && [...expectedPositions].every((key) => occupiedPositions.has(key)));
+      const cardsByGroup = new Map();
+      blobCards.forEach((card) => {
+        const cards = cardsByGroup.get(card.dataset.blobGroup) || [];
+        cards.push(card);
+        cardsByGroup.set(card.dataset.blobGroup, cards);
+      });
+      const groupsConnected = [...cardsByGroup.values()].every((cards) => {
+        const own = new Set(cards.map(positionKey));
+        const seen = new Set();
+        const pending = [cards[0]];
+        while (pending.length) {
+          const card = pending.pop();
+          const key = positionKey(card);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          const row = Number(card.dataset.gridRow);
+          const column = Number(card.dataset.gridColumn);
+          for (const neighbor of [`${row - 1}:${column}`, `${row + 1}:${column}`, `${row}:${column - 1}`, `${row}:${column + 1}`]) {
+            if (own.has(neighbor) && !seen.has(neighbor)) pending.push(blobCards.find((candidate) => positionKey(candidate) === neighbor));
+          }
+        }
+        return seen.size === cards.length;
+      });
+      check('every captured room group remains one connected blob across rows', groupsConnected);
+
+      const sizingSection = api.welcome.makeFriendGroupsSection(document, capturedBlobFriends.slice(0, 9));
+      sizingSection.style.cssText = 'position:absolute;visibility:hidden;width:347px;';
+      document.body.appendChild(sizingSection);
+      const sizingCards = [...sizingSection.querySelectorAll('.kuplafix-welcome-friend')];
+      const topGapCard = sizingSection.querySelector('.kf-blob-gap-top:not(.kf-blob-gap-left)');
+      const topLeftGapCard = sizingSection.querySelector('.kf-blob-gap-top.kf-blob-gap-left');
+      const baseRect = sizingCards[0].getBoundingClientRect();
+      const topGapRect = topGapCard?.getBoundingClientRect();
+      const topLeftGapRect = topLeftGapCard?.getBoundingClientRect();
+      const topGapStyle = topGapCard ? getComputedStyle(topGapCard, '::before') : null;
+      const topLeftGapStyle = topLeftGapCard ? getComputedStyle(topLeftGapCard, '::before') : null;
+      check('blob gaps preserve equal friend-card dimensions',
+        !!topGapRect && !!topLeftGapRect
+        && Math.abs(topGapRect.width - baseRect.width) < 0.1
+        && Math.abs(topGapRect.height - baseRect.height) < 0.1
+        && Math.abs(topLeftGapRect.width - baseRect.width) < 0.1
+        && Math.abs(topLeftGapRect.height - baseRect.height) < 0.1);
+      check('blob spacing is drawn inside cards instead of changing grid geometry',
+        topGapStyle?.top === '5px' && topGapStyle?.left === '0px'
+        && topLeftGapStyle?.top === '5px' && topLeftGapStyle?.left === '5px');
+      sizingSection.remove();
+
+      const alternateSizingFriends = [
+        ...capturedBlobFriends.slice(0, 9),
+        { id: 99, username: 'Roomless', roomId: null, roomName: 'Ei huoneessa' }
+      ];
+      const alternateSizingSection = api.welcome.makeFriendGroupsSection(document, alternateSizingFriends);
+      alternateSizingSection.style.cssText = 'position:absolute;visibility:hidden;width:347px;';
+      document.body.appendChild(alternateSizingSection);
+      const alternateCards = [...alternateSizingSection.querySelectorAll('.kuplafix-welcome-friend')];
+      const alternateBaseRect = alternateCards[0].getBoundingClientRect();
+      const alternateTopGapCard = alternateSizingSection.querySelector('.kf-blob-gap-top:not(.kf-blob-gap-left)');
+      const alternateLeftGapCard = alternateSizingSection.querySelector('.kf-blob-gap-left:not(.kf-blob-gap-top)');
+      const alternateTopGapRect = alternateTopGapCard?.getBoundingClientRect();
+      const alternateLeftGapRect = alternateLeftGapCard?.getBoundingClientRect();
+      const alternateTopGapStyle = alternateTopGapCard ? getComputedStyle(alternateTopGapCard, '::before') : null;
+      const alternateLeftGapStyle = alternateLeftGapCard ? getComputedStyle(alternateLeftGapCard, '::before') : null;
+      check('7+2+1 orientation keeps top-only and left-only cards aligned',
+        !!alternateTopGapRect && !!alternateLeftGapRect
+        && alternateTopGapCard.dataset.gridRow === alternateLeftGapCard.dataset.gridRow
+        && Math.abs(alternateTopGapRect.width - alternateBaseRect.width) < 0.1
+        && Math.abs(alternateTopGapRect.height - alternateBaseRect.height) < 0.1
+        && Math.abs(alternateLeftGapRect.width - alternateBaseRect.width) < 0.1
+        && Math.abs(alternateLeftGapRect.height - alternateBaseRect.height) < 0.1);
+      check('7+2+1 orientation preserves perpendicular five-pixel borders',
+        alternateTopGapStyle?.top === '5px' && alternateTopGapStyle?.left === '0px'
+        && alternateLeftGapStyle?.top === '0px' && alternateLeftGapStyle?.left === '5px');
+      alternateSizingSection.remove();
+
+      const originalSessionStartedAt = api.welcome.sessionStartedAt;
+      const visitReference = Date.now();
+      api.welcome.sessionStartedAt = visitReference;
+      const previousLogicalVisit = {
+        sessionStartedAt: visitReference - 86400000,
+        lastSeenAt: visitReference - 82800000
+      };
+      const recentReloadState = {
+        sessionStartedAt: visitReference - 10800000,
+        lastSeenAt: visitReference - 1800000,
+        previousVisit: previousLogicalVisit
+      };
+      const continuedVisit = api.welcome.resolveVisitPair(recentReloadState, visitReference);
+      check('reload under one hour keeps the current logical visit', continuedVisit.continued && continuedVisit.currentStartedAt === recentReloadState.sessionStartedAt);
+      check('reload under one hour does not overwrite the previous visit', continuedVisit.previous?.sessionStartedAt === previousLogicalVisit.sessionStartedAt);
+
+      const expiredVisit = api.welcome.resolveVisitPair({ ...recentReloadState, lastSeenAt: visitReference - 3600000 }, visitReference);
+      check('one hour away advances exactly one previous visit', !expiredVisit.continued && expiredVisit.currentStartedAt === visitReference && expiredVisit.previous?.sessionStartedAt === recentReloadState.sessionStartedAt);
+
+      const legacyReloadChain = {
+        sessionStartedAt: visitReference - 7200000,
+        lastSeenAt: visitReference - 1800000,
+        visitHistory: [
+          previousLogicalVisit,
+          { sessionStartedAt: visitReference - 10800000, lastSeenAt: visitReference - 9000000 }
+        ]
+      };
+      const migratedVisit = api.welcome.resolveVisitPair(legacyReloadChain, visitReference);
+      check('legacy reload history collapses into two logical visits', migratedVisit.currentStartedAt === visitReference - 10800000 && migratedVisit.previous?.sessionStartedAt === previousLogicalVisit.sessionStartedAt);
+      api.welcome.sessionStartedAt = originalSessionStartedAt;
+
+      const eventWrapper = document.createElement('div');
+      eventWrapper.innerHTML = '<div class="nitro-alert-hotel event"><div class="nitro-card-header-text">Test event</div><div class="notification-text"><span>Join test room</span></div><button class="btn-primary">Enter</button></div>';
+      document.getElementById('draggable-windows-container').appendChild(eventWrapper);
+      await delay(50);
+      check('event invite selector matches two Nitro classes', !!document.querySelector('.kuplafix-event-notification'));
+
+      const failures = checks.filter((item) => !item.pass);
+      results.innerHTML = `<h1 class="${failures.length ? 'fail' : 'pass'}">${failures.length ? `${failures.length} smoke test(s) failed` : `${checks.length} smoke tests passed`}</h1>` + checks.map((item) => `<div class="${item.pass ? 'pass' : 'fail'}">${item.pass ? 'PASS' : 'FAIL'} · ${item.name}${item.details ? ` · ${item.details}` : ''}</div>`).join('');
+      document.documentElement.dataset.smokeStatus = failures.length ? 'failed' : 'passed';
+    });
+  </script>
+</body>
+</html>

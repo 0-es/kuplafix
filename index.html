@@ -221,7 +221,7 @@
             <li><strong>Siirry clienttiin.</strong> Avaa Kuplahotelli ja lataa client.</li>
             <li><strong>Lataa kuplaFix.</strong> Paina tallentamaasi kuplaFix-kirjanmerkkiä.</li>
           </ol>
-          <a id="kuplafix-bookmarklet" class="button button-primary bookmarklet" href="javascript:(()=>{if(!/(^|\.)kuplahotelli\.com$/i.test(location.hostname)){alert('Avaa ensin Kuplahotelli ja peliclientti.');return;}if(window.__KUPLAFIX_LOADING__||window.__kuplafix_singleton__){alert('kuplaFix on jo käytössä tai latautumassa tällä sivulla.');return;}window.__KUPLAFIX_LOADING__=true;window.__KUPLAFIX_BOOKMARKLET_BOOT__=true;const s=document.createElement('script');const done=()=>{window.__KUPLAFIX_LOADING__=false;s.remove();};s.src='https://0-es.github.io/kuplafix/kuplafix.user.js?v=2.2.0';s.onload=done;s.onerror=()=>{window.__KUPLAFIX_LOADING__=false;window.__KUPLAFIX_BOOKMARKLET_BOOT__=undefined;s.remove();alert('kuplaFixin lataaminen epäonnistui. Tarkista verkkoyhteys ja yritä uudelleen.');};document.documentElement.appendChild(s);})();">kuplaFix</a>
+          <a id="kuplafix-bookmarklet" class="button button-primary bookmarklet" href="javascript:(()=>{if(!/(^|\.)kuplahotelli\.com$/i.test(location.hostname)){alert('Avaa ensin Kuplahotelli ja peliclientti.');return;}if(window.__KUPLAFIX_LOADING__||window.__kuplafix_singleton__){alert('kuplaFix on jo käytössä tai latautumassa tällä sivulla.');return;}window.__KUPLAFIX_LOADING__=true;window.__KUPLAFIX_BOOKMARKLET_BOOT__=true;const s=document.createElement('script');const done=()=>{window.__KUPLAFIX_LOADING__=false;s.remove();};s.src='https://0-es.github.io/kuplafix/kuplafix.user.js?v=2.2.1';s.onload=done;s.onerror=()=>{window.__KUPLAFIX_LOADING__=false;window.__KUPLAFIX_BOOKMARKLET_BOOT__=undefined;s.remove();alert('kuplaFixin lataaminen epäonnistui. Tarkista verkkoyhteys ja yritä uudelleen.');};document.documentElement.appendChild(s);})();">kuplaFix</a>
           <div class="install-note">Kirjanmerkkipalkki näkyviin: <code>Ctrl + Shift + B</code></div>
         </article>
         <article class="install-option">
@@ -262,7 +262,7 @@
   </pre>
           <button class="kuplafix-close-btn" id="kuplafix-close-btn" aria-label="Sulje asetukset">✕</button>
         </div>
-        <div class="kuplafix-menu-subtitle">kuplaFix 2.2.0 - uusin</div>
+        <div class="kuplafix-menu-subtitle">kuplaFix 2.2.1 - uusin</div>
 
         <div class="kuplafix-features-list">
 
@@ -351,15 +351,23 @@
               <form class="kuplafix-options-form" id="kuplafix-form-gif-blocker">
                 <div style="margin-bottom: 8px;">
                   <label class="kuplafix-options-label">Estotapa:</label>
-                  <select id="kuplafix-gif-mode" class="kuplafix-select">
-                    <option value="spoiler">Spoiler (näytä klikkaamalla)</option>
-                    <option value="block">Poista koko viesti</option>
+                  <select id="kuplafix-gif-mode-select" class="kuplafix-select">
+                    <option value="spoiler" selected="">Spoiler (näytä klikkaamalla)</option>
+                    <option value="allow-selected">Salli vain valituilta</option>
+                    <option value="block-all">Estä kaikki GIF-viestit</option>
                   </select>
                 </div>
-                <!-- ...existing code... -->
+                <div id="kuplafix-gif-allow-section">
+                  <label for="kuplafix-gif-username-input" class="kuplafix-options-label">Sallittu käyttäjä</label>
+                  <div class="kuplafix-options-row">
+                    <input type="text" id="kuplafix-gif-username-input" class="kuplafix-options-input" placeholder="Käyttäjänimi">
+                    <button type="submit" class="kuplafix-btn">Lisää</button>
+                  </div>
+                  <div id="kuplafix-gif-whitelist-list" class="kuplafix-whitelist-list"></div>
+                </div>
               </form>
             </div>
-            <!-- ...existing code... -->
+            <div class="kuplafix-feature-status" data-role="gif-status">Sallitut: Ei ketään</div>
 
             </div>
           </div>
@@ -757,7 +765,7 @@ Pysyvät: Online, Merkit, Lahjat
             </div>
           </div>
           <div class="kuplafix-feature-content">
-            <div class="kuplafix-feature-description">työkaluja pakettien lähettämiseen ja tutkimiseen.</div>
+            <div class="kuplafix-feature-description">lähetä, tutki, estä ja muokkaa sisään- tai ulosmeneviä paketteja otsakkeen perusteella.</div>
 
             <div class="kuplafix-feature-body">
 

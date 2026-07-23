@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         kuplafix
 // @namespace    kuplafix
-// @version      2.2.0
-// @description  kuplahotelli UI fixes & enhancements (ScriptCat edition)
-// @author       res
+// @version      2.2.1
+// @description  kuplahotelli UI fixes & enhancements
+// @author       0es
 // @match        *://kuplahotelli.com/game/nitro*
 // @noframes
 // @run-at       document-start
@@ -66,7 +66,7 @@
 
   // Keep startup quiet; use `log` for controlled output.
   const SCRIPT_NAME = 'kuplafix';
-  const SCRIPT_VERSION = '2.2.0';
+  const SCRIPT_VERSION = '2.2.1';
   const CONFIG_KEY = 'kuplafix_config';
   const DEBUG_ENABLED = false;
 
@@ -195,10 +195,11 @@
     roomLightingEnabled: false,
     roomBrightness: 1,
     roomTemperature: 0, // 0-100 yövalo (päivänvalo lämmin) aste
-    fastLoadEnabled: true, // Preconnect & preload hints for faster loading
     rendererConfigHijackEnabled: false,
     rendererConfigOverrides: {},
     uiConfigOverrides: {},
+    packetLoggingEnabled: false,
+    packetFilters: '[]', // Persisted header-level block/modify rules
     packetMacros: '[]', // JSON string of macros
     ignoredOutgoingHeaders: '[]', // JSON string of header IDs
     ignoredIncomingHeaders: '[]', // JSON string of header IDs
@@ -285,6 +286,7 @@
 
     _nitroIframeCallbacks: new Set(),
     _nitroIframeObserver: null,
+    _nitroBindQueued: false,
     _nitroLastIframeDoc: null,
     _nitroBoundIframes: new WeakSet(),
     _nitroLifecycleSuspended: IS_BOOKMARKLET_BOOT,
@@ -368,8 +370,18 @@
 
       // Observe DOM for iframe creation/replacement
       if (!this._nitroIframeObserver) {
-        this._nitroIframeObserver = new MutationObserver(() => {
-          this._bindNitroIframe();
+        this._nitroIframeObserver = new MutationObserver((mutations) => {
+          const affectsNitroIframe = mutations.some((mutation) =>
+            [...mutation.addedNodes, ...mutation.removedNodes].some((node) =>
+              node.nodeType === 1 && (node.id === 'nitro' || node.querySelector?.('#nitro'))
+            )
+          );
+          if (!affectsNitroIframe || this._nitroBindQueued) return;
+          this._nitroBindQueued = true;
+          queueMicrotask(() => {
+            this._nitroBindQueued = false;
+            this._bindNitroIframe();
+          });
         });
 
         try {
@@ -494,6 +506,7 @@
         let done = false;
         let unsubscribeIframe = null;
         let observer = null;
+        let timer = null;
 
         const finish = (value) => {
           if (done) return;
@@ -543,7 +556,7 @@
         });
 
         if (timeout > 0) {
-          setTimeout(() => {
+          timer = setTimeout(() => {
             finish(null);
           }, timeout);
         }
@@ -2148,30 +2161,32 @@
         .kuplafix-welcome-room-count { display:flex; align-items:center; gap:4px; color:#b7c6cc; font-size:10px; }
         .kuplafix-welcome-room-friends { display:flex; flex-wrap:wrap; align-items:center; gap:2px; min-height:27px; margin-top:1px; padding-left:2px; }
         .kuplafix-welcome-room-friend-head { width:26px; height:26px; border:1px solid var(--kf-room-border,#182126); border-radius:50%; background-color:#243239; background-position:center 22%; background-repeat:no-repeat; background-size:auto; image-rendering:auto; box-shadow:0 1px 3px rgba(0,0,0,.45); }
-        .kuplafix-welcome-friend-groups { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:0; }
-        .kuplafix-welcome-friend-room-blob, .kuplafix-welcome-friend-list { display:contents; }
+        .kuplafix-welcome-friend-groups { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); grid-auto-flow:row; gap:0; }
         .kuplafix-welcome-friend { aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-width:0; min-height:0; padding:6px 4px; border:1px solid var(--kf-room-border,#2a3a41); border-radius:9px; color:#f4f7f8; background:var(--kf-room-tint,#182126); cursor:pointer; text-align:center; }
         .kuplafix-welcome-friend:not(button) { cursor:default; }
         .kuplafix-welcome-friend:hover { border-color:var(--kf-room-accent,#7cb1c8); filter:brightness(1.1); }
-        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend { border:0 solid var(--kf-room-border,#2a3a41); border-radius:0; background:var(--kf-room-tint,#182126); box-shadow:none; }
-        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-edge-top { border-top-width:1px; }
-        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-edge-right { border-right-width:1px; }
-        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-edge-bottom { border-bottom-width:1px; }
-        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-edge-left { border-left-width:1px; }
-        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-corner-tl { border-top-left-radius:8px; }
-        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-corner-tr { border-top-right-radius:8px; }
-        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-corner-bl { border-bottom-left-radius:8px; }
-        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-corner-br { border-bottom-right-radius:8px; }
-        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-blob-gap-left { margin-left:5px; }
-        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend.kf-blob-gap-top { margin-top:5px; }
-        .kuplafix-welcome-friend-room-blob .kuplafix-welcome-friend:hover { background:rgba(255,255,255,.07); filter:none; }
+        .kuplafix-welcome-friend-groups > .kuplafix-welcome-friend { position:relative; isolation:isolate; --kf-blob-inset-top:0px; --kf-blob-inset-left:0px; border:0; border-radius:0; background:transparent; box-shadow:none; }
+        .kuplafix-welcome-friend-groups > .kuplafix-welcome-friend::before { content:""; position:absolute; z-index:0; top:var(--kf-blob-inset-top); right:0; bottom:0; left:var(--kf-blob-inset-left); border:0 solid var(--kf-room-border,#2a3a41); border-radius:0; background:var(--kf-room-tint,#182126); pointer-events:none; }
+        .kuplafix-welcome-friend-groups > .kuplafix-welcome-friend > * { position:relative; z-index:1; }
+        .kuplafix-welcome-friend-groups > .kuplafix-welcome-friend.kf-edge-top::before { border-top-width:1px; }
+        .kuplafix-welcome-friend-groups > .kuplafix-welcome-friend.kf-edge-right::before { border-right-width:1px; }
+        .kuplafix-welcome-friend-groups > .kuplafix-welcome-friend.kf-edge-bottom::before { border-bottom-width:1px; }
+        .kuplafix-welcome-friend-groups > .kuplafix-welcome-friend.kf-edge-left::before { border-left-width:1px; }
+        .kuplafix-welcome-friend-groups > .kuplafix-welcome-friend.kf-corner-tl::before { border-top-left-radius:8px; }
+        .kuplafix-welcome-friend-groups > .kuplafix-welcome-friend.kf-corner-tr::before { border-top-right-radius:8px; }
+        .kuplafix-welcome-friend-groups > .kuplafix-welcome-friend.kf-corner-bl::before { border-bottom-left-radius:8px; }
+        .kuplafix-welcome-friend-groups > .kuplafix-welcome-friend.kf-corner-br::before { border-bottom-right-radius:8px; }
+        .kuplafix-welcome-friend-groups > .kuplafix-welcome-friend.kf-blob-gap-left { --kf-blob-inset-left:5px; }
+        .kuplafix-welcome-friend-groups > .kuplafix-welcome-friend.kf-blob-gap-top { --kf-blob-inset-top:5px; }
+        .kuplafix-welcome-friend-groups > .kuplafix-welcome-friend:hover { filter:none; }
+        .kuplafix-welcome-friend-groups > .kuplafix-welcome-friend:hover::before { border-color:var(--kf-room-accent,#7cb1c8); background:rgba(255,255,255,.07); }
+        .kuplafix-welcome-friend-groups > .kuplafix-welcome-friend.kuplafix-welcome-friend-no-room { --kf-room-tint:rgba(16,19,21,.88); --kf-room-border:rgba(112,121,126,.68); --kf-room-accent:#b9c1c5; }
         .kuplafix-welcome-avatar { flex:0 0 40px; width:40px; height:40px; overflow:hidden; border-radius:50%; background-color:#243239; background-position:center 28%; background-repeat:no-repeat; background-size:auto; image-rendering:pixelated; }
         .kuplafix-welcome-avatar[data-fallback]::after { content:attr(data-fallback); display:grid; place-items:center; width:100%; height:100%; color:#7cb1c8; font-weight:800; }
         .kuplafix-welcome-friend-copy { min-width:0; width:100%; display:flex; flex-direction:column; align-items:center; gap:1px; }
         .kuplafix-welcome-friend-name, .kuplafix-welcome-friend-room { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .kuplafix-welcome-friend-name { font-size:11px; font-weight:700; }
         .kuplafix-welcome-friend-room { color:#b7c6cc; font-size:9px; }
-        .kuplafix-welcome-friend-last { color:#748991; font-size:8px; }
         .kuplafix-welcome-chat { grid-column:1 / -1; padding:11px 0; }
         .kuplafix-welcome-chat h3 { margin-bottom:6px; font-size:9px; opacity:.8; }
         .kuplafix-welcome-chat-scroll { max-height:145px; overflow:auto; padding:6px; border:1px solid #2a3a41; border-radius:6px; background:#11181b; font-family:'Ubuntu','Segoe UI',sans-serif; font-size:14px; font-weight:500; }
@@ -2181,7 +2196,7 @@
         .kuplafix-welcome-footer button { min-height:34px; border:1px solid #364951; border-radius:6px; padding:0 12px; color:#f4f7f8; background:#1f292e; cursor:pointer; font-size:11px; font-weight:700; }
         .kuplafix-welcome-footer button:hover { border-color:#7cb1c8; }
         .kuplafix-welcome-footer button:last-child { border-color:#176f8f; background:#176f8f; }
-        @media (max-width: 620px) { .kuplafix-welcome-grid { grid-template-columns:1fr; } .kuplafix-welcome-friend-list { grid-template-columns:repeat(3, minmax(0, 1fr)); } .kuplafix-welcome-staff-section { grid-column:auto; } }
+        @media (max-width: 620px) { .kuplafix-welcome-grid { grid-template-columns:1fr; } .kuplafix-welcome-friend-groups { grid-template-columns:repeat(3, minmax(0, 1fr)); } .kuplafix-welcome-staff-section { grid-column:auto; } }
 
         .kuplafix-menu > .kuplafix-menu-footer { margin-top:10px !important; padding-top:10px !important; }
       `;
@@ -2206,6 +2221,7 @@
     configButton: null,
     configMenu: null,
     buttonDoc: null,
+    _configButtonRetry: null,
 
     async init() {
       log.debug('UI.init()');
@@ -2252,8 +2268,17 @@
 
       if (!target) {
         log.debug('Toolbar container not ready, retrying in 500ms...');
-        setTimeout(() => this.addConfigButton(), 500);
+        if (!this._configButtonRetry) {
+          this._configButtonRetry = setTimeout(() => {
+            this._configButtonRetry = null;
+            this.addConfigButton();
+          }, 500);
+        }
         return;
+      }
+      if (this._configButtonRetry) {
+        clearTimeout(this._configButtonRetry);
+        this._configButtonRetry = null;
       }
 
       // If a previous instance already injected the button, re-use it.
@@ -2401,6 +2426,12 @@
       const roomTemperature = Number.isFinite(roomTemperatureRaw) ? Math.max(0, Math.min(100, roomTemperatureRaw)) : 0;
 
       const asciiHtml = ASCII_HEADER.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const escapeFeatureText = (value) => String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 
       // Check for pending update
       const pendingUpdate = GM_getValue('kuplafix_pending_update', null);
@@ -2475,15 +2506,27 @@
               <form class="kuplafix-options-form" id="kuplafix-form-gif-blocker">
                 <div style="margin-bottom: 8px;">
                   <label class="kuplafix-options-label">Estotapa:</label>
-                  <select id="kuplafix-gif-mode" class="kuplafix-select">
-                    <option value="spoiler" ${config.get('gifBlockMode') === 'spoiler' ? 'selected' : ''}>Spoiler (näytä klikkaamalla)</option>
-                    <option value="block" ${config.get('gifBlockMode') === 'block' ? 'selected' : ''}>Poista koko viesti</option>
+                  <select id="kuplafix-gif-mode-select" class="kuplafix-select">
+                    <option value="spoiler" ${gifBlockerMode === 'spoiler' ? 'selected' : ''}>Spoiler (näytä klikkaamalla)</option>
+                    <option value="allow-selected" ${gifBlockerMode === 'allow-selected' ? 'selected' : ''}>Salli vain valituilta</option>
+                    <option value="block-all" ${gifBlockerMode === 'block-all' ? 'selected' : ''}>Estä kaikki GIF-viestit</option>
                   </select>
                 </div>
-                <!-- ...existing code... -->
+                <div id="kuplafix-gif-allow-section" style="display:${gifBlockerMode === 'block-all' ? 'none' : 'block'};">
+                  <label for="kuplafix-gif-username-input" class="kuplafix-options-label">Sallittu käyttäjä</label>
+                  <div class="kuplafix-options-row">
+                    <input type="text" id="kuplafix-gif-username-input" class="kuplafix-options-input" autocomplete="off" placeholder="Käyttäjänimi">
+                    <button type="submit" class="kuplafix-btn">Lisää</button>
+                  </div>
+                  <div id="kuplafix-gif-whitelist-list" class="kuplafix-whitelist-list">
+                    ${gifBlockerWhitelist.map((username) => `<span class="kuplafix-whitelist-user-tag" data-username="${escapeFeatureText(username)}">${escapeFeatureText(username)}<button type="button" class="kuplafix-remove-whitelist-btn">✕</button></span>`).join('')}
+                  </div>
+                </div>
               </form>
             </div>
-            <!-- ...existing code... -->
+            <div class="kuplafix-feature-status" data-role="gif-status">
+              ${gifBlockerMode === 'block-all' ? 'Kaikki GIF:t estetään' : `Sallitut: ${gifBlockerWhitelist.length > 0 ? gifBlockerWhitelist.length : 'Ei ketään'}`}
+            </div>
           `
         },
         'bubble-alerts': {
@@ -2724,7 +2767,7 @@
         },
         'packet-tools': {
           title: 'packet tools',
-          description: 'työkaluja pakettien lähettämiseen ja tutkimiseen.',
+          description: 'lähetä, tutki, estä ja muokkaa sisään- tai ulosmeneviä paketteja otsakkeen perusteella.',
           headerBtn: '<button id="kuplafix-open-builder-header" class="kuplafix-btn" style="padding: 2px 8px; font-size: 11px; height: auto;">Packet Builder</button>',
           content: ''
         },
@@ -3007,8 +3050,11 @@
         resetBtn.addEventListener('click', () => {
           if (confirm('Palautetaanko asetukset oletuksiin?')) {
             config.reset();
+            PacketManager.loadFilters();
             ChatEnhancements.refreshState(true);
-            GifBlocker.updateAllDocuments();
+            GifBlocker.toggleFeature(config.get('gifBlockerEnabled'));
+            RoomLighting.disable();
+            VoiceMessages.teardown?.();
             this.saveMenuPosition(null);
             menu.remove();
             this.configMenu = null;
@@ -3059,11 +3105,13 @@
           if (currentMode !== 'block-all') {
             GifBlocker.addToWhitelist(username);
             const whitelist = config.get('gifBlockerWhitelist') || [];
-            gifWhitelistContainer.innerHTML = whitelist.map(u => `<span class="kuplafix-whitelist-user-tag" data-username="${u}">${u}<button type="button" class="kuplafix-remove-whitelist-btn">✕</button></span>`).join('');
-            gifStatusLabel.textContent = `Sallitut: ${whitelist.length > 0 ? whitelist.length : 'Ei ketään'}`;
+            if (gifWhitelistContainer) {
+              gifWhitelistContainer.innerHTML = whitelist.map(u => `<span class="kuplafix-whitelist-user-tag" data-username="${escapeFeatureText(u)}">${escapeFeatureText(u)}<button type="button" class="kuplafix-remove-whitelist-btn">✕</button></span>`).join('');
+            }
+            if (gifStatusLabel) gifStatusLabel.textContent = `Sallitut: ${whitelist.length > 0 ? whitelist.length : 'Ei ketään'}`;
 
             // Re-attach remove listeners
-            gifWhitelistContainer.querySelectorAll('.kuplafix-remove-whitelist-btn').forEach(btn => {
+            gifWhitelistContainer?.querySelectorAll('.kuplafix-remove-whitelist-btn').forEach(btn => {
               btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 const tag = btn.closest('.kuplafix-whitelist-user-tag');
@@ -3071,7 +3119,7 @@
                 GifBlocker.removeFromWhitelist(user);
                 tag.remove();
                 const updated = config.get('gifBlockerWhitelist') || [];
-                gifStatusLabel.textContent = `Sallitut: ${updated.length}`;
+                if (gifStatusLabel) gifStatusLabel.textContent = `Sallitut: ${updated.length}`;
               });
             });
             UI.showToast(`Käyttäjä ${username} lisätty sallittuihin.`);
@@ -3092,7 +3140,7 @@
             const updated = config.get('gifBlockerWhitelist') || [];
             const currentMode = config.get('gifBlockerMode') || 'block-all';
             if (currentMode !== 'block-all') {
-              gifStatusLabel.textContent = `Sallitut: ${updated.length > 0 ? updated.length : 'Ei ketään'}`;
+              if (gifStatusLabel) gifStatusLabel.textContent = `Sallitut: ${updated.length > 0 ? updated.length : 'Ei ketään'}`;
             }
           });
         });
@@ -3115,9 +3163,9 @@
           // Update status label
           const whitelist = config.get('gifBlockerWhitelist') || [];
           if (newMode === 'block-all') {
-            gifStatusLabel.textContent = 'Kaikki GIF:t estetään';
+            if (gifStatusLabel) gifStatusLabel.textContent = 'Kaikki GIF:t estetään';
           } else {
-            gifStatusLabel.textContent = `Sallitut: ${whitelist.length > 0 ? whitelist.length : 'Ei ketään'}`;
+            if (gifStatusLabel) gifStatusLabel.textContent = `Sallitut: ${whitelist.length > 0 ? whitelist.length : 'Ei ketään'}`;
           }
 
           GifBlocker.updateAllDocuments();
@@ -3166,9 +3214,9 @@
 
       bindFeatureToggle('kf-room-lighting', 'roomLightingEnabled', 'Huonevalaistus', (enabled) => {
         if (enabled) {
-          RoomLighting.refresh();
+          RoomLighting.enable();
         } else {
-          RoomLighting.clear();
+          RoomLighting.disable();
         }
       });
 
@@ -3884,10 +3932,18 @@
     intervalId: null,
     pendingRequest: false,
     defaultPlaceholder: null,
+    retryTimeout: null,
+    visibilityBound: false,
 
     async init() {
       log.debug('ChatEnhancements.init()');
       await DOM.ready;
+      if (!this.visibilityBound) {
+        this.visibilityBound = true;
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden && config.get('onlineCountEnabled')) this.updateOnlineCount(true);
+        }, { passive: true });
+      }
       this.refreshState(true);
 
       // Re-apply placeholder if iframe reloads
@@ -3923,7 +3979,9 @@
         this.updateOnlineCount();
       }
       const interval = this.getInterval();
-      this.intervalId = setInterval(() => this.updateOnlineCount(), interval);
+      this.intervalId = setInterval(() => {
+        if (!document.hidden) this.updateOnlineCount();
+      }, interval);
       log.debug('Online count updater started with interval', interval, 'ms');
     },
 
@@ -3932,6 +3990,10 @@
         clearInterval(this.intervalId);
         this.intervalId = null;
         log.debug('Online count updater stopped');
+      }
+      if (this.retryTimeout) {
+        clearTimeout(this.retryTimeout);
+        this.retryTimeout = null;
       }
     },
 
@@ -3969,14 +4031,21 @@
     },
 
     updateOnlineCount(isImmediate = false) {
-      if (!config.get('onlineCountEnabled')) return;
+      if (!config.get('onlineCountEnabled') || document.hidden) return;
 
       const chatInput = this.resolveChatInput();
       if (!chatInput) {
-        if (isImmediate) {
-          setTimeout(() => this.updateOnlineCount(true), 1000);
+        if (isImmediate && !this.retryTimeout) {
+          this.retryTimeout = setTimeout(() => {
+            this.retryTimeout = null;
+            this.updateOnlineCount(true);
+          }, 1000);
         }
         return;
+      }
+      if (this.retryTimeout) {
+        clearTimeout(this.retryTimeout);
+        this.retryTimeout = null;
       }
 
       this.captureDefaultPlaceholder();
@@ -4012,7 +4081,7 @@
   // Module: Update Checker
   const UpdateChecker = {
     RAW_SCRIPT_URL: 'https://raw.githubusercontent.com/0-es/kuplafix/main/kuplafix.user.js',
-    CHECK_INTERVAL: 60 * 60 * 1000, // 1 hour
+    CHECK_THROTTLE: 60 * 1000,
     UPDATE_KEY: 'kuplafix_last_update_check',
     NOTIFICATION_KEY: 'kuplafix_update_notification_shown',
     LATEST_VERSION_KEY: 'kuplafix_latest_version',
@@ -4044,12 +4113,11 @@
       const lastCheck = GM_getValue(this.UPDATE_KEY, 0);
       const now = Date.now();
       const timeSinceLastCheck = now - lastCheck;
-      const CHECK_THROTTLE = 60 * 1000; // 1 minute throttle
 
       log.info(`checkForUpdates called. Last check: ${lastCheck}, Now: ${now}, Difference: ${timeSinceLastCheck}ms (${Math.round(timeSinceLastCheck / 1000)}s)`);
 
       // Throttle to avoid hammering the release source.
-      if (timeSinceLastCheck < CHECK_THROTTLE && lastCheck > 0) {
+      if (timeSinceLastCheck < this.CHECK_THROTTLE && lastCheck > 0) {
         log.info(`⏭️ Update check throttled - last check was ${Math.round(timeSinceLastCheck / 1000)}s ago`);
         return;
       }
@@ -4194,7 +4262,6 @@
 
   // Module: GIF Blocker
   const GifBlocker = {
-    pollingIntervals: [],
     monitoredDocs: new Set(),
     _observerByDoc: new WeakMap(),
     _debounceByDoc: new WeakMap(),
@@ -4202,12 +4269,17 @@
     async init() {
       log.debug('GifBlocker.init()');
       await DOM.ready;
-      safe(() => this.startMonitoring(), 'GIF blocker monitoring');
+      if (config.get('gifBlockerEnabled')) {
+        safe(() => this.startMonitoring(), 'GIF blocker monitoring');
+      }
 
       // Ensure we attach inside the Nitro iframe once its document is available (and after reloads).
       DOM.onNitroIframeDocReady((iframeDoc) => {
         try {
-          if (iframeDoc && !this.monitoredDocs.has(iframeDoc)) {
+          if (iframeDoc && config.get('gifBlockerEnabled') && !this.monitoredDocs.has(iframeDoc)) {
+            [...this.monitoredDocs].forEach((docRef) => {
+              if (docRef !== document && docRef !== iframeDoc) this.unmonitorDocument(docRef);
+            });
             log.debug('[GifBlocker] Nitro iframe doc ready, setting up monitoring');
             this.monitorDocument(iframeDoc);
           }
@@ -4218,6 +4290,7 @@
     },
 
     startMonitoring() {
+      if (!config.get('gifBlockerEnabled')) return;
       const docs = [];
       const iframeDoc = DOM.getIframeDoc();
       if (iframeDoc) docs.push(iframeDoc);
@@ -4226,6 +4299,19 @@
       docs.forEach((docRef) => {
         this.monitorDocument(docRef);
       });
+    },
+
+    unmonitorDocument(docRef) {
+      this._observerByDoc.get(docRef)?.disconnect();
+      const handle = this._debounceByDoc.get(docRef);
+      if (handle) clearTimeout(handle);
+      this._observerByDoc.delete(docRef);
+      this._debounceByDoc.delete(docRef);
+      this.monitoredDocs.delete(docRef);
+    },
+
+    stopMonitoring() {
+      [...this.monitoredDocs].forEach((docRef) => this.unmonitorDocument(docRef));
     },
 
     monitorDocument(docRef) {
@@ -4494,7 +4580,13 @@
 
     toggleFeature(enabled) {
       config.set('gifBlockerEnabled', !!enabled);
-      this.updateAllDocuments();
+      if (enabled) {
+        this.startMonitoring();
+        this.updateAllDocuments();
+      } else {
+        this.updateAllDocuments();
+        this.stopMonitoring();
+      }
     },
   };
 
@@ -4518,14 +4610,25 @@
     async init() {
       log.debug('RoomLighting.init()');
       await DOM.ready;
-      this.setupObserversForDoc(document);
-      this.applyToDoc(document);
+      if (this.isEnabled()) this.enable();
 
       DOM.onNitroIframeDocReady((iframeDoc) => {
+        if (!this.isEnabled()) return;
         log.debug('RoomLighting: iframe doc ready');
         this.setupObserversForDoc(iframeDoc);
         this.applyToDoc(iframeDoc);
       });
+    },
+
+    enable() {
+      if (!this.isEnabled()) return;
+      this.getDocs().forEach((docRef) => this.setupObserversForDoc(docRef));
+      this.applyFilters();
+    },
+
+    disable() {
+      this.clear();
+      this.teardown();
     },
 
     getDocs() {
@@ -4569,7 +4672,7 @@
         this.clear();
         return;
       }
-      this.applyFilters();
+      this.enable();
     },
 
     buildFilter() {
@@ -4640,6 +4743,7 @@
   const LiveKit = {
     window: null,
     button: null,
+    _buttonRetry: null,
     // Security: do not ship embedded JWTs in the userscript.
     // A token is fetched from `config.livekitTokenEndpoint` at runtime.
     baseUrl: 'https://meet.livekit.io/custom',
@@ -4662,11 +4766,21 @@
     },
 
     addButton() {
+      if (!config.get('livekitEnabled')) return;
       // Wait for config button container
       const container = DOM.querySelector('#kuplafix-config-btn-container');
       if (!container) {
-        setTimeout(() => this.addButton(), 500);
+        if (!this._buttonRetry) {
+          this._buttonRetry = setTimeout(() => {
+            this._buttonRetry = null;
+            this.addButton();
+          }, 500);
+        }
         return;
+      }
+      if (this._buttonRetry) {
+        clearTimeout(this._buttonRetry);
+        this._buttonRetry = null;
       }
 
       if (this.button && this.button.isConnected) return;
@@ -4725,6 +4839,10 @@
     },
 
     removeButton() {
+      if (this._buttonRetry) {
+        clearTimeout(this._buttonRetry);
+        this._buttonRetry = null;
+      }
       const wrapper = DOM.querySelector('#kuplafix-livekit-btn-container');
       if (wrapper) {
         wrapper.remove();
@@ -5505,8 +5623,15 @@
     targetDoc: null,
     popoutWindow: null,
     popoutContent: null,
-    _hijackObserver: null,
-    _hijackDebounceHandle: null,
+    HISTORY_BUTTON_SELECTOR: [
+      '[title="Keskusteluhistoria"]',
+      '[title="keskusteluhistoria"]',
+      '[title="Chat History"]',
+      '[title="Chat history"]',
+      '[title="chat history"]',
+      '.nitro-room-tools-container .icon-chat-history'
+    ].join(', '),
+    _hijackDocuments: new WeakSet(),
 
     async init() {
       log.debug('ChatHistoryUI.init()');
@@ -5517,9 +5642,6 @@
       this.createWindow();
       this.hijackButton();
 
-      // React can re-render the toolbar; observe and re-hijack without polling.
-      this._startHijackObserver();
-
       // If the iframe wasn't ready at init, re-run once it loads (and after reloads).
       if (!this.iframeHookRegistered) {
         this.iframeHookRegistered = true;
@@ -5527,54 +5649,11 @@
           try {
             this.createWindow();
             this.hijackButton();
-            this._startHijackObserver();
           } catch (_) {
             // ignore
           }
         });
       }
-    },
-
-    _startHijackObserver() {
-      const schedule = () => {
-        if (this._hijackDebounceHandle) return;
-        this._hijackDebounceHandle = setTimeout(() => {
-          this._hijackDebounceHandle = null;
-          this.hijackButton();
-        }, 250);
-      };
-
-      if (!this._hijackObserver) {
-        this._hijackObserver = new MutationObserver(() => {
-          if (config.get('chatHistoryCacheEnabled')) {
-            schedule();
-          }
-        });
-      }
-      try {
-        this._hijackObserver.observe(document.body || document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: false,
-        });
-      } catch (_) { }
-
-      const iframeDoc = DOM.getIframeDoc();
-      if (iframeDoc?.body) {
-        try {
-          this._hijackObserver.observe(iframeDoc.body, {
-            childList: true,
-            subtree: true,
-            attributes: false,
-          });
-        } catch (_) { }
-      }
-
-      // Watchdog: Check every 2 seconds in case Observer misses it (e.g. rapid React updates)
-      if (this.watchdogInterval) clearInterval(this.watchdogInterval);
-      this.watchdogInterval = setInterval(() => {
-        this.hijackButton();
-      }, 2000);
     },
 
     createWindow() {
@@ -6110,68 +6189,45 @@
     },
 
 
-    hijackButton() {
-      // Strategy 1: Find by title attribute (most robust for this client)
-      let nativeButton = DOM.querySelector('[title="Keskusteluhistoria"], [title="Chat History"]');
+    historyButtonFromTarget(target) {
+      const element = target?.nodeType === 1 ? target : target?.parentElement;
+      return element?.closest?.(this.HISTORY_BUTTON_SELECTOR) || null;
+    },
 
-      // Strategy 2: SVG Path (New Robust Strategy)
-      if (!nativeButton) {
-        // Look for the specific SVG path of the chat history icon
-        const path = DOM.querySelector('path[d^="M416 192c0-88.4-93.1-160-208-160S0 103.6 0 192"]');
-        if (path) {
-          // The button is the grandparent/great-grandparent of the path
-          // path -> svg -> div (button)
-          nativeButton = path.closest('.nitro-pointer');
-        }
-      }
+    installHistoryCapture(doc) {
+      if (!doc?.addEventListener || this._hijackDocuments.has(doc)) return;
+      const captureTarget = doc.defaultView || doc;
+      captureTarget.addEventListener('click', (event) => {
+        const nativeButton = this.historyButtonFromTarget(event.target);
+        if (!nativeButton || !config.get('chatHistoryCacheEnabled')) return;
 
-      // Strategy 3: Find by structure based on user snapshot (v2.0.11 fix)
-      // Selector: .nitro-toolbar > div > div > div > div:nth-child(2) > div:nth-child(3)
-      if (!nativeButton) {
-        nativeButton = DOM.querySelector('.nitro-toolbar > div > div > div > div:nth-child(2) > div:nth-child(3)');
-      }
-
-      // Strategy 3: Legacy structure fallback
-      if (!nativeButton) {
-        const firstView = DOM.querySelector('.nitro-toolbar-firstview');
-        if (firstView) {
-          // The buttons are in the second child of the main container
-          // .nitro-toolbar-firstview > div > div:nth-child(2) > div
-          const buttonsContainer = firstView.querySelector('div > div:nth-child(2)');
-          if (buttonsContainer && buttonsContainer.children.length >= 3) {
-            // 3rd button is usually chat history
-            nativeButton = buttonsContainer.children[2];
-          }
-        }
-      }
-
-      if (nativeButton && !nativeButton.dataset.kuplafixHijacked) {
-        log.debug('Found native chat history button, hijacking...');
-
-        // Mark as hijacked
+        // Window/document capture runs before Nitro's React root handler. It therefore
+        // also catches a button rendered immediately before the user clicks it.
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
         nativeButton.dataset.kuplafixHijacked = 'true';
-
-        // Add capture listener to intercept clicks BEFORE React sees them
-        nativeButton.addEventListener('click', (e) => {
-          if (config.get('chatHistoryCacheEnabled')) {
-            // Feature enabled: Stop native behavior and open our window
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            log.debug('Intercepted chat history click');
-            this.toggle();
-          } else {
-            // Feature disabled: Let event bubble to React (native behavior)
-            log.debug('Chat history click passed through (feature disabled)');
-          }
-        }, { capture: true });
-
-        // Ensure pointer cursor
         nativeButton.style.cursor = 'pointer';
-
         this.button = nativeButton;
-        log.info('✓ Chat history button hijacked (listener attached)');
-      }
+        log.debug('Intercepted chat history click');
+        this.toggle();
+      }, { capture: true });
+      this._hijackDocuments.add(doc);
+    },
+
+    hijackButton() {
+      const docs = [document, DOM.getIframeDoc()].filter(Boolean);
+      docs.forEach((doc) => this.installHistoryCapture(doc));
+
+      const nativeButton = docs
+        .map((doc) => doc.querySelector(this.HISTORY_BUTTON_SELECTOR))
+        .find(Boolean);
+      if (!nativeButton) return;
+
+      nativeButton.dataset.kuplafixHijacked = 'true';
+      nativeButton.style.cursor = 'pointer';
+      this.button = nativeButton;
+      log.info('✓ Chat history button hijacked (document capture active)');
     }
   };
 
@@ -7460,12 +7516,15 @@
       if (!docRef || this.monitoredDocs.has(docRef)) return;
       this.monitoredDocs.add(docRef);
 
-      const scan = () => this.scanDoc(docRef);
-      scan();
+      this.scanDoc(docRef);
 
       try {
         const root = docRef.body || docRef.documentElement;
-        const obs = new MutationObserver(() => scan());
+        const obs = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => this.scanRoot(node, docRef));
+          });
+        });
         obs.observe(root, { childList: true, subtree: true });
         this.observers.set(docRef, obs);
       } catch (e) {
@@ -7474,7 +7533,16 @@
     },
 
     scanDoc(docRef) {
-      const nodes = docRef.querySelectorAll('.chat-bubble .message, .bubble-container .message, .chat-bubble .chat-content');
+      this.scanRoot(docRef, docRef);
+    },
+
+    scanRoot(root, docRef) {
+      const selector = '.chat-bubble .message, .bubble-container .message, .chat-bubble .chat-content';
+      const element = root?.nodeType === 3 ? root.parentElement : root;
+      if (!element) return;
+      const nodes = [];
+      if (element.nodeType === 1 && element.matches?.(selector)) nodes.push(element);
+      element.querySelectorAll?.(selector).forEach((node) => nodes.push(node));
       nodes.forEach((node) => this.processNode(node, docRef));
     },
 
@@ -7602,7 +7670,12 @@
     maxHistory: 50,
     ignoredOutgoingHeaders: new Set(),
     ignoredIncomingHeaders: new Set(),
+    filters: [],
+    _filterIndex: new Map(),
+    _filterHits: new Map(),
+    _filterBypassEvents: new WeakSet(),
     macros: [],
+    _macroIndex: new Map(),
     macroExecuting: new Set(), // Prevent infinite loops
 
     // Packet Listeners (for external scripts like Roomilus)
@@ -7620,6 +7693,7 @@
 
     // Helper: Build structure map from HEADERS (called once on init)
     _structMap: null,
+    _headerNames: null,
     _buildStructMap() {
       if (this._structMap) return;
       this._structMap = {};
@@ -7631,6 +7705,23 @@
         const struct = this._getStruct(entry);
         if (struct) this._structMap[this._getId(entry)] = struct;
       }
+    },
+
+    _buildHeaderNames() {
+      if (this._headerNames) return;
+      this._headerNames = { OUT: new Map(), IN: new Map() };
+      for (const direction of ['OUT', 'IN']) {
+        const headers = this.HEADERS[direction === 'OUT' ? 'OUTGOING' : 'INCOMING'];
+        for (const [name, entry] of Object.entries(headers)) {
+          const id = this._getId(entry);
+          if (!this._headerNames[direction].has(id)) this._headerNames[direction].set(id, name);
+        }
+      }
+    },
+
+    getHeaderName(direction, header) {
+      this._buildHeaderNames();
+      return this._headerNames[direction]?.get(Number(header)) || 'Unknown';
     },
 
     // Known Header IDs (can be expanded)
@@ -8591,6 +8682,9 @@
       this._initialized = true;
       log.debug('PacketManager.init()');
       this.loggingEnabled = !!config.get('packetLoggingEnabled');
+      this._buildStructMap();
+      this._buildHeaderNames();
+      this.loadFilters();
       this.loadMacros();
       this.loadIgnoredHeaders();
       this.installHook(window);
@@ -8606,15 +8700,18 @@
       try {
         const saved = config.get('packetMacros');
         this.macros = saved ? JSON.parse(saved) : [];
+        this.rebuildMacroIndex();
         log.debug('PacketManager: Loaded', this.macros.length, 'macros');
       } catch (e) {
         log.error('PacketManager: Failed to load macros', e);
         this.macros = [];
+        this.rebuildMacroIndex();
       }
     },
 
     saveMacros() {
       try {
+        this.rebuildMacroIndex();
         config.set('packetMacros', JSON.stringify(this.macros));
         log.debug('PacketManager: Saved', this.macros.length, 'macros');
       } catch (e) {
@@ -8713,6 +8810,9 @@
       const originalProtoSend = OriginalWebSocket.prototype.send;
       OriginalWebSocket.prototype.send = function (data) {
         if (this.url && this.url.includes('hanarchy.net')) {
+          const filtered = self.applyPacketFilters('OUT', data);
+          if (filtered.blocked) return;
+          data = filtered.data;
           self.logPacket('OUT', data);
         }
         return originalProtoSend.call(this, data);
@@ -8745,7 +8845,27 @@
 
           // Hook incoming
           ws.addEventListener('message', (event) => {
-            if (self.logPacket('IN', event.data)) event.stopImmediatePropagation();
+            if (self._filterBypassEvents.has(event)) {
+              self._filterBypassEvents.delete(event);
+              return;
+            }
+            const filtered = self.applyPacketFilters('IN', event.data);
+            if (filtered.blocked) {
+              event.stopImmediatePropagation();
+              return;
+            }
+            const suppress = self.logPacket('IN', filtered.data);
+            if (suppress || filtered.modified) event.stopImmediatePropagation();
+            if (filtered.modified && !suppress) {
+              const MessageEventType = win.MessageEvent || MessageEvent;
+              const modifiedEvent = new MessageEventType('message', {
+                data: filtered.data,
+                origin: event.origin || ws.url,
+                lastEventId: event.lastEventId || ''
+              });
+              self._filterBypassEvents.add(modifiedEvent);
+              ws.dispatchEvent(modifiedEvent);
+            }
           });
         }
 
@@ -8845,15 +8965,7 @@
         }
 
         if (this.loggingEnabled) {
-          // Find header name
-          let headerName = 'Unknown';
-          const headerMap = direction === 'OUT' ? PacketManager.HEADERS.OUTGOING : PacketManager.HEADERS.INCOMING;
-          for (const [name, entry] of Object.entries(headerMap)) {
-            if (this._getId(entry) === header) {
-              headerName = name;
-              break;
-            }
-          }
+          const headerName = this.getHeaderName(direction, header);
 
           console.log(`%c[PacketManager] ${direction} [${header}] ${headerName} Len:${length}`,
             direction === 'OUT' ? 'color: #00aa00' : 'color: #00aaaa');
@@ -8869,14 +8981,13 @@
 
     checkMacros(direction, header, buffer) {
       const dir = direction === 'OUT' ? 'send' : 'receive';
+      const candidates = this._macroIndex.get(`${dir}:${header}`);
+      if (!candidates?.length) return;
 
-      for (const macro of this.macros) {
+      for (const macro of candidates) {
         if (!macro.enabled) continue;
-        if (macro.trigger.direction !== dir) continue;
-        if (macro.trigger.header !== header) continue;
 
         // Prevent infinite loops
-        const macroKey = `${macro.id}-${Date.now()}`;
         if (this.macroExecuting.has(macro.id)) continue;
 
         // Parse packet arguments for condition checking and variable substitution
@@ -9647,6 +9758,133 @@
       }
     },
 
+    loadFilters() {
+      try {
+        const saved = config.get('packetFilters');
+        const parsed = saved ? JSON.parse(saved) : [];
+        this.filters = Array.isArray(parsed) ? parsed.filter((filter) =>
+          filter && Number.isInteger(Number(filter.header)) && ['OUT', 'IN'].includes(filter.direction) && ['block', 'modify'].includes(filter.action)
+        ).map((filter) => ({
+          id: filter.id ?? (Date.now() + Math.random()),
+          enabled: filter.enabled !== false,
+          direction: filter.direction,
+          header: Number(filter.header),
+          action: filter.action,
+          modifications: Array.isArray(filter.modifications) ? filter.modifications : []
+        })) : [];
+      } catch (error) {
+        log.error('PacketManager: Failed to load packet filters', error);
+        this.filters = [];
+      }
+      this.rebuildFilterIndex();
+    },
+
+    saveFilters() {
+      this.rebuildFilterIndex();
+      config.set('packetFilters', JSON.stringify(this.filters));
+    },
+
+    rebuildFilterIndex() {
+      const index = new Map();
+      for (const filter of this.filters) {
+        if (!filter?.enabled || !['OUT', 'IN'].includes(filter.direction)) continue;
+        const header = Number(filter.header);
+        if (!Number.isInteger(header)) continue;
+        const key = `${filter.direction}:${header}`;
+        if (!index.has(key)) index.set(key, []);
+        index.get(key).push(filter);
+      }
+      this._filterIndex = index;
+    },
+
+    addFilter(filter) {
+      const stored = { ...filter, id: filter.id ?? (Date.now() + Math.random()), enabled: filter.enabled !== false };
+      this.filters.push(stored);
+      this.saveFilters();
+      return stored;
+    },
+
+    updateFilter(id, updates) {
+      const index = this.filters.findIndex((filter) => filter.id === id);
+      if (index < 0) return false;
+      this.filters[index] = { ...this.filters[index], ...updates, id };
+      this.saveFilters();
+      return true;
+    },
+
+    deleteFilter(id) {
+      this.filters = this.filters.filter((filter) => filter.id !== id);
+      this._filterHits.delete(id);
+      this.saveFilters();
+    },
+
+    toggleFilter(id) {
+      const filter = this.filters.find((candidate) => candidate.id === id);
+      if (!filter) return;
+      filter.enabled = !filter.enabled;
+      this.saveFilters();
+    },
+
+    _packetArrayBuffer(data) {
+      const type = Object.prototype.toString.call(data);
+      if (data instanceof ArrayBuffer || type === '[object ArrayBuffer]') return data;
+      if (ArrayBuffer.isView(data) || (data?.buffer && Object.prototype.toString.call(data.buffer) === '[object ArrayBuffer]')) {
+        return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+      }
+      return null;
+    },
+
+    _coerceFilterValue(type, value) {
+      if (type === 'String') return String(value ?? '');
+      if (type === 'Boolean') return value === true || value === 1 || value === '1' || String(value).toLowerCase() === 'true';
+      const numeric = Number.parseInt(value, 10);
+      return Number.isFinite(numeric) ? numeric : 0;
+    },
+
+    applyPacketFilters(direction, data) {
+      const buffer = this._packetArrayBuffer(data);
+      if (!buffer || buffer.byteLength < 6) return { blocked: false, modified: false, data };
+      const header = new DataView(buffer).getInt16(4);
+      const filters = this._filterIndex.get(`${direction}:${header}`);
+      if (!filters?.length) return { blocked: false, modified: false, data, header };
+
+      let workingBuffer = buffer;
+      let modified = false;
+      for (const filter of filters) {
+        this._filterHits.set(filter.id, (this._filterHits.get(filter.id) || 0) + 1);
+        if (filter.action === 'block') {
+          return { blocked: true, modified, data: workingBuffer, header, filter };
+        }
+
+        const changes = Array.isArray(filter.modifications) ? filter.modifications : [];
+        if (!changes.length) continue;
+        const args = this.parsePacket(workingBuffer, header).map((arg) => ({ type: arg.type, value: arg.value }));
+        for (const change of changes) {
+          const argIndex = Number.parseInt(change.index, 10);
+          if (!Number.isInteger(argIndex) || argIndex < 0 || argIndex >= args.length) continue;
+          const type = ['String', 'Int', 'Short', 'Byte', 'Boolean'].includes(change.type) ? change.type : args[argIndex].type;
+          args[argIndex] = { type, value: this._coerceFilterValue(type, change.value) };
+        }
+        workingBuffer = this.createPacket(header, args);
+        modified = true;
+      }
+      return { blocked: false, modified, data: workingBuffer, header };
+    },
+
+    rebuildMacroIndex() {
+      const index = new Map();
+      for (const macro of this.macros) {
+        if (!macro?.enabled || !macro.trigger) continue;
+        const direction = macro.trigger.direction === 'send' ? 'send' : 'receive';
+        const header = Number(macro.trigger.header);
+        if (!Number.isFinite(header)) continue;
+        const key = `${direction}:${header}`;
+        if (!index.has(key)) index.set(key, []);
+        index.get(key).push(macro);
+      }
+      this._macroIndex = index;
+    },
+
     sendSilent(header, ...values) {
       if (!this.socket || this.socket.readyState !== 1) return false;
       try {
@@ -9856,8 +10094,9 @@
   const PacketBuilder = {
     isOpen: false,
     window: null,
-    activeTab: 'builder', // 'builder', 'history', 'incoming', or 'macros'
+    activeTab: 'builder', // 'builder', 'history', 'incoming', 'filters', or 'macros'
     lastPosition: null,
+    editingFilter: null,
     editingMacro: null, // For macro editor
 
     toggle() {
@@ -9934,6 +10173,7 @@
       tabs.appendChild(createTab('builder', 'Builder'));
       tabs.appendChild(createTab('history', 'Out Log'));
       tabs.appendChild(createTab('incoming', 'In Log'));
+      tabs.appendChild(createTab('filters', 'Filters'));
       tabs.appendChild(createTab('macros', 'Macros'));
       win.appendChild(tabs);
 
@@ -9960,7 +10200,7 @@
 
       // Update tabs styling
       const tabs = this.window.children[1].children;
-      const tabIds = ['builder', 'history', 'incoming', 'macros'];
+      const tabIds = ['builder', 'history', 'incoming', 'filters', 'macros'];
       for (let i = 0; i < tabs.length && i < tabIds.length; i++) {
         const isActive = this.activeTab === tabIds[i];
         tabs[i].style.color = isActive ? '#fff' : '#aaa';
@@ -9977,6 +10217,8 @@
         this.renderHistory();
       } else if (this.activeTab === 'incoming') {
         this.renderIncomingLog();
+      } else if (this.activeTab === 'filters') {
+        this.renderFilters();
       } else if (this.activeTab === 'macros') {
         this.renderMacros();
       }
@@ -10606,6 +10848,295 @@
           left: element.style.left
         };
       }
+    },
+
+    // ─────────────────────────────────────────────────────────────────
+    // Header Filters Tab
+    // ─────────────────────────────────────────────────────────────────
+    filterHeaderEntries(direction) {
+      const map = direction === 'OUT' ? PacketManager.HEADERS.OUTGOING : PacketManager.HEADERS.INCOMING;
+      const seen = new Set();
+      return Object.entries(map).map(([name, entry]) => [name, PacketManager._getId(entry)])
+        .filter(([, id]) => Number.isInteger(Number(id)) && !seen.has(Number(id)) && seen.add(Number(id)))
+        .sort((a, b) => Number(a[1]) - Number(b[1]));
+    },
+
+    formatFilterHeader(direction, header) {
+      const name = PacketManager.getHeaderName(direction, header);
+      return name === 'Unknown' ? String(header) : `[${header}] ${name}`;
+    },
+
+    parseFilterHeader(value, direction) {
+      const text = String(value || '').trim();
+      const numeric = text.match(/^\[?(-?\d+)\]?/);
+      if (numeric) return Number(numeric[1]);
+      const match = this.filterHeaderEntries(direction).find(([name]) => name.toLowerCase() === text.toLowerCase());
+      return match ? Number(match[1]) : NaN;
+    },
+
+    renderFilters() {
+      if (this.editingFilter) {
+        this.renderFilterEditor();
+        return;
+      }
+      const content = this.contentArea;
+      content.style.padding = '15px 15px 15px 0px';
+
+      const intro = document.createElement('div');
+      intro.style.cssText = 'display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px;';
+      const copy = document.createElement('div');
+      copy.innerHTML = '<div style="font-weight:700;color:#fff;">Header filters</div><div style="font-size:10px;color:#82949c;margin-top:3px;line-height:1.45;">Block a packet or replace selected parsed arguments before it reaches the server/client.</div>';
+      const add = document.createElement('button');
+      add.className = 'kuplafix-btn';
+      add.textContent = '+ Add filter';
+      add.style.whiteSpace = 'nowrap';
+      add.onclick = () => {
+        this.editingFilter = { id: null, enabled: true, direction: 'OUT', header: 1314, action: 'block', modifications: [] };
+        this.renderContent();
+      };
+      intro.append(copy, add);
+      content.appendChild(intro);
+
+      if (!PacketManager.filters.length) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'padding:24px 12px;text-align:center;color:#5c707a;border:1px dashed rgba(124,177,200,.25);border-radius:7px;font-size:11px;';
+        empty.textContent = 'No packet filters configured.';
+        content.appendChild(empty);
+        return;
+      }
+
+      const list = document.createElement('div');
+      list.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+      for (const filter of PacketManager.filters) {
+        const card = document.createElement('div');
+        card.style.cssText = `display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:9px 10px;border:1px solid ${filter.enabled ? 'rgba(83,142,165,.55)' : 'rgba(92,112,122,.3)'};border-radius:7px;background:${filter.enabled ? 'rgba(25,47,57,.62)' : 'rgba(22,29,33,.5)'};`;
+        const toggle = document.createElement('input');
+        toggle.type = 'checkbox';
+        toggle.className = 'kuplafix-macro-checkbox';
+        toggle.checked = filter.enabled !== false;
+        toggle.title = 'Enable or disable filter';
+        toggle.onchange = () => {
+          PacketManager.toggleFilter(filter.id);
+          this.renderContent();
+        };
+        const details = document.createElement('div');
+        const title = document.createElement('div');
+        title.style.cssText = 'font-size:11px;font-weight:700;color:#fff;';
+        title.textContent = `${filter.direction} · ${this.formatFilterHeader(filter.direction, filter.header)}`;
+        const summary = document.createElement('div');
+        summary.style.cssText = 'font-size:9px;color:#91a4ac;margin-top:3px;';
+        const hits = PacketManager._filterHits.get(filter.id) || 0;
+        summary.textContent = filter.action === 'block'
+          ? `BLOCK · ${hits} hit${hits === 1 ? '' : 's'} this session`
+          : `MODIFY ${filter.modifications?.length || 0} argument(s) · ${hits} hit${hits === 1 ? '' : 's'} this session`;
+        details.append(title, summary);
+        const actions = document.createElement('div');
+        actions.style.cssText = 'display:flex;gap:5px;';
+        const edit = document.createElement('button');
+        edit.className = 'kuplafix-btn-secondary';
+        edit.textContent = 'Edit';
+        edit.onclick = () => {
+          this.editingFilter = JSON.parse(JSON.stringify(filter));
+          this.renderContent();
+        };
+        const remove = document.createElement('button');
+        remove.className = 'kuplafix-btn';
+        remove.textContent = '×';
+        remove.title = 'Delete filter';
+        remove.style.cssText = 'background:#8f3535;padding:3px 8px;';
+        remove.onclick = () => {
+          PacketManager.deleteFilter(filter.id);
+          this.renderContent();
+        };
+        actions.append(edit, remove);
+        card.append(toggle, details, actions);
+        list.appendChild(card);
+      }
+      content.appendChild(list);
+    },
+
+    renderFilterEditor() {
+      const content = this.contentArea;
+      const filter = this.editingFilter;
+      content.style.padding = '15px 15px 15px 0px';
+
+      const heading = document.createElement('div');
+      heading.style.cssText = 'font-weight:700;color:#fff;margin-bottom:12px;';
+      heading.textContent = filter.id === null ? 'New packet filter' : 'Edit packet filter';
+      content.appendChild(heading);
+
+      const form = document.createElement('div');
+      form.style.cssText = 'display:flex;flex-direction:column;gap:11px;';
+      const top = document.createElement('div');
+      top.className = 'kuplafix-options-row';
+      top.style.alignItems = 'flex-start';
+      top.innerHTML = `
+        <div style="width:100px;">
+          <label class="kuplafix-options-label">Direction</label>
+          <select class="kuplafix-options-input" data-filter-direction>
+            <option value="OUT" ${filter.direction === 'OUT' ? 'selected' : ''}>OUT</option>
+            <option value="IN" ${filter.direction === 'IN' ? 'selected' : ''}>IN</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <label class="kuplafix-options-label">Header (ID or exact name)</label>
+          <input class="kuplafix-options-input" data-filter-header style="width:100%;box-sizing:border-box;" list="pb-filter-header-options">
+          <datalist id="pb-filter-header-options"></datalist>
+        </div>
+        <div style="width:110px;">
+          <label class="kuplafix-options-label">Action</label>
+          <select class="kuplafix-options-input" data-filter-action>
+            <option value="block" ${filter.action === 'block' ? 'selected' : ''}>Block</option>
+            <option value="modify" ${filter.action === 'modify' ? 'selected' : ''}>Modify</option>
+          </select>
+        </div>`;
+      form.appendChild(top);
+
+      const direction = top.querySelector('[data-filter-direction]');
+      const headerInput = top.querySelector('[data-filter-header]');
+      const headerOptions = top.querySelector('#pb-filter-header-options');
+      const action = top.querySelector('[data-filter-action]');
+      const refreshHeaderOptions = () => {
+        headerOptions.replaceChildren();
+        this.filterHeaderEntries(filter.direction).forEach(([name, id]) => {
+          const option = document.createElement('option');
+          option.value = `[${id}] ${name}`;
+          headerOptions.appendChild(option);
+        });
+      };
+      refreshHeaderOptions();
+      headerInput.value = this.formatFilterHeader(filter.direction, filter.header);
+      direction.onchange = () => {
+        filter.direction = direction.value;
+        refreshHeaderOptions();
+        headerInput.value = this.formatFilterHeader(filter.direction, filter.header);
+      };
+      headerInput.onchange = () => {
+        const parsed = this.parseFilterHeader(headerInput.value, filter.direction);
+        if (Number.isInteger(parsed)) {
+          filter.header = parsed;
+          headerInput.value = this.formatFilterHeader(filter.direction, filter.header);
+        }
+      };
+      action.onchange = () => {
+        filter.action = action.value;
+        this.renderContent();
+      };
+
+      if (filter.action === 'modify') {
+        const note = document.createElement('div');
+        note.style.cssText = 'padding:8px 9px;border:1px solid rgba(124,177,200,.25);border-radius:6px;background:rgba(20,34,40,.55);font-size:10px;color:#aebdc3;line-height:1.45;';
+        note.textContent = 'Only listed argument indexes are replaced. All other values are parsed from each live packet and preserved.';
+        form.appendChild(note);
+
+        const tools = document.createElement('div');
+        tools.style.cssText = 'display:flex;gap:7px;';
+        const parseLatest = document.createElement('button');
+        parseLatest.className = 'kuplafix-btn-secondary';
+        parseLatest.textContent = 'Parse latest matching packet';
+        parseLatest.onclick = () => {
+          const history = filter.direction === 'OUT' ? PacketManager.outgoingHistory : PacketManager.incomingHistory;
+          const packet = [...history].reverse().find((candidate) => Number(candidate.header) === Number(filter.header));
+          if (!packet) {
+            UI.showToast('No matching packet in the current Builder log yet.', 'info');
+            return;
+          }
+          const parsed = PacketManager.parsePacket(packet.buffer, filter.header);
+          filter.modifications = parsed.map((arg, index) => ({ index, type: arg.type, value: arg.value }));
+          this.renderContent();
+          UI.showToast(`Parsed ${parsed.length} argument(s). Remove rows you do not want to replace.`, 'success');
+        };
+        const addArgument = document.createElement('button');
+        addArgument.className = 'kuplafix-btn-secondary';
+        addArgument.textContent = '+ Argument change';
+        addArgument.onclick = () => {
+          filter.modifications.push({ index: filter.modifications.length, type: 'String', value: '' });
+          this.renderContent();
+        };
+        tools.append(parseLatest, addArgument);
+        form.appendChild(tools);
+
+        const rows = document.createElement('div');
+        rows.style.cssText = 'display:flex;flex-direction:column;gap:7px;';
+        if (!filter.modifications.length) {
+          const empty = document.createElement('div');
+          empty.style.cssText = 'font-size:10px;color:#657982;padding:9px 0;';
+          empty.textContent = 'Add an argument change or capture a matching packet while this tab is open.';
+          rows.appendChild(empty);
+        }
+        filter.modifications.forEach((change, index) => {
+          const row = document.createElement('div');
+          row.style.cssText = 'display:grid;grid-template-columns:62px 90px 1fr 30px;gap:7px;align-items:center;';
+          const argIndex = document.createElement('input');
+          argIndex.type = 'number';
+          argIndex.min = '0';
+          argIndex.className = 'kuplafix-options-input';
+          argIndex.value = change.index;
+          argIndex.title = 'Zero-based argument index';
+          argIndex.oninput = () => change.index = Math.max(0, Number.parseInt(argIndex.value, 10) || 0);
+          const type = document.createElement('select');
+          type.className = 'kuplafix-options-input';
+          ['String', 'Int', 'Short', 'Byte', 'Boolean'].forEach((name) => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            option.selected = name === change.type;
+            type.appendChild(option);
+          });
+          type.onchange = () => change.type = type.value;
+          const value = document.createElement('input');
+          value.className = 'kuplafix-options-input';
+          value.value = change.value ?? '';
+          value.placeholder = 'Replacement value';
+          value.oninput = () => change.value = value.value;
+          const remove = document.createElement('button');
+          remove.className = 'kuplafix-btn';
+          remove.textContent = '×';
+          remove.style.cssText = 'background:#8f3535;padding:3px 0;';
+          remove.onclick = () => {
+            filter.modifications.splice(index, 1);
+            this.renderContent();
+          };
+          row.append(argIndex, type, value, remove);
+          rows.appendChild(row);
+        });
+        form.appendChild(rows);
+      }
+
+      const footer = document.createElement('div');
+      footer.style.cssText = 'display:flex;gap:8px;margin-top:5px;';
+      const save = document.createElement('button');
+      save.className = 'kuplafix-btn';
+      save.style.flex = '1';
+      save.textContent = 'Save filter';
+      save.onclick = () => {
+        const parsedHeader = this.parseFilterHeader(headerInput.value, filter.direction);
+        if (!Number.isInteger(parsedHeader) || parsedHeader < -32768 || parsedHeader > 32767) {
+          UI.showToast('Choose a valid 16-bit packet header.', 'error');
+          return;
+        }
+        filter.header = parsedHeader;
+        if (filter.action === 'modify' && !filter.modifications.length) {
+          UI.showToast('Add at least one argument change.', 'error');
+          return;
+        }
+        if (filter.id === null) PacketManager.addFilter(filter);
+        else PacketManager.updateFilter(filter.id, filter);
+        this.editingFilter = null;
+        this.renderContent();
+        UI.showToast('Packet filter saved.', 'success');
+      };
+      const cancel = document.createElement('button');
+      cancel.className = 'kuplafix-btn-secondary';
+      cancel.style.flex = '1';
+      cancel.textContent = 'Cancel';
+      cancel.onclick = () => {
+        this.editingFilter = null;
+        this.renderContent();
+      };
+      footer.append(save, cancel);
+      form.appendChild(footer);
+      content.appendChild(form);
     },
 
     // ─────────────────────────────────────────────────────────────────
@@ -11618,144 +12149,9 @@
     },
 
     getHeaderName(headerId, direction) {
-      const map = direction === 'send' ? PacketManager.HEADERS.OUTGOING : PacketManager.HEADERS.INCOMING;
-      for (const [name, entry] of Object.entries(map)) {
-        if (PacketManager._getId(entry) === headerId) return name;
-      }
-      return 'Unknown';
+      return PacketManager.getHeaderName(direction === 'send' ? 'OUT' : 'IN', headerId);
     }
   };
-
-  // ─────────────────────────────────────────────────────────────────
-  // FastLoad - Preconnect & Preload for faster loading
-  // ─────────────────────────────────────────────────────────────────
-  // Based on HAR traffic analysis from kuplahotelli.com
-  // Key insight: Assets are served from https://kuplahotelli.com/nitro-assets/
-  const FastLoad = {
-    _initialized: false,
-    _cache: new Map(),
-
-    // Asset base URL (from HAR: https://kuplahotelli.com/nitro-assets/)
-    // Note: The game uses a double slash in many places, e.g., /nitro-assets//gamedata/
-    ASSET_BASE: 'https://kuplahotelli.com/nitro-assets/',
-
-    // Called IMMEDIATELY on script load (before config)
-    earlyInit() {
-      if (this._initialized) return;
-      this._initialized = true;
-
-      this.injectHints();
-      this.preloadGamedata();
-    },
-
-    injectHints() {
-      const origins = [
-        'https://kuplahotelli.com',
-        'https://kupla.hanarchy.net' // Web Socket domain
-      ];
-      origins.forEach(origin => {
-        const preconnect = document.createElement('link');
-        preconnect.rel = 'preconnect';
-        preconnect.href = origin;
-        preconnect.crossOrigin = 'anonymous';
-        document.head.appendChild(preconnect);
-
-        const dns = document.createElement('link');
-        dns.rel = 'dns-prefetch';
-        dns.href = origin;
-        document.head.appendChild(dns);
-      });
-    },
-
-    async preloadGamedata() {
-      // Critical JSON files
-      const jsonFiles = [
-        '/gamedata/FurnitureData.json',    // 26MB
-        '/gamedata/FigureDataISO.json',   // 16MB
-        '/gamedata/ProductData.json',      // 3.8MB
-        '/gamedata/ExternalTexts.json',
-        '/gamedata/UITexts.json',
-        '/gamedata/FigureMapISO.json',
-        '/gamedata/EffectMap.json',
-        '/gamedata/HabboAvatarActions.json'
-      ];
-
-      const nitroAssets = [
-        '/bundled/generic/place_holder.nitro',
-        '/bundled/generic/room.nitro',
-        '/bundled/generic/tile_cursor.nitro',
-        '/bundled/generic/selection_arrow.nitro',
-        '/bundled/generic/place_holder_wall.nitro',
-        '/bundled/generic/place_holder_pet.nitro',
-        '/bundled/generic/avatar_additions.nitro',
-        '/bundled/generic/group_badge.nitro',
-        '/bundled/generic/floor_editor.nitro',
-        '/bundled/figure2/hh_human_body.nitro',
-        '/bundled/figure2/hh_human_50_body.nitro',
-        '/bundled/figure2/hh_human_item.nitro',
-        '/bundled/effect/Dance1.nitro',
-        '/bundled/effect/Dance2.nitro',
-        '/bundled/effect/Dance3.nitro',
-        '/bundled/effect/Dance4.nitro'
-      ];
-
-      const all = [...jsonFiles, ...nitroAssets];
-      log.info(`[kuplafix] FastLoad: Starting Cache-Forwarding for ${all.length} assets`);
-
-      all.forEach(file => {
-        const url = `${this.ASSET_BASE}${file}`;
-        const promise = fetch(url).then(async resp => {
-          if (!resp.ok) throw new Error(`Status ${resp.status}`);
-          const blob = await resp.blob();
-          return {
-            blob,
-            status: resp.status,
-            statusText: resp.statusText,
-            headers: resp.headers
-          };
-        }).catch(err => {
-          log.warn(`[kuplafix] FastLoad: Failed early fetch ${file}:`, err);
-          return null;
-        });
-        this._cache.set(url, promise);
-      });
-    },
-
-    // Try to get a response from our early cache
-    async getCachedResponse(url) {
-      const baseUrl = url.split('?')[0];
-      const cached = this._cache.get(baseUrl);
-      if (!cached) return null;
-
-      try {
-        const data = await cached;
-        if (!data) return null;
-
-        log.info(`[kuplafix] FastLoad: HIT early cache for ${baseUrl}`);
-
-        // Strip encoding headers since the blob is already decompressed
-        const headers = new Headers(data.headers);
-        headers.delete('content-encoding');
-        headers.delete('content-length');
-
-        return new Response(data.blob, {
-          status: data.status,
-          statusText: data.statusText,
-          headers: headers
-        });
-      } catch (e) {
-        return null;
-      }
-    },
-
-    // Returns config overrides
-    getConfigOverrides() {
-      return {};
-    }
-  };
-
-  // Run FastLoad IMMEDIATELY (before everything else)
-  FastLoad.earlyInit();
 
   // ─────────────────────────────────────────────────────────────────
   // Renderer Config Hijacker
@@ -11764,11 +12160,10 @@
     _initialized: false,
     async init() {
       if (this._initialized) return;
+      if (!config.get('rendererConfigHijackEnabled')) return;
       this._initialized = true;
 
       log.debug('ConfigHijacker.init()');
-      // Don't return early - we need to hijack for fastLoadEnabled OR rendererConfigHijackEnabled
-      if (!config.get('rendererConfigHijackEnabled') && !config.get('fastLoadEnabled')) return;
 
       this.apply(window);
 
@@ -11787,6 +12182,7 @@
 
       const originalFetch = win.fetch;
       win.fetch = async (...args) => {
+        if (!config.get('rendererConfigHijackEnabled')) return originalFetch(...args);
         let url = '';
         if (typeof args[0] === 'string') url = args[0];
         else if (args[0] instanceof URL) url = args[0].href;
@@ -11801,20 +12197,10 @@
           const configKey = isRenderer ? 'rendererConfigOverrides' : 'uiConfigOverrides';
 
           log.info(`Hijacking ${type} fetch:`, url);
+          const response = await originalFetch(...args);
           try {
-            const response = await originalFetch(...args);
-            const data = await response.json();
+            const data = await response.clone().json();
 
-            // Apply FastLoad overrides first (if enabled and this is renderer-config)
-            if (isRenderer && config.get('fastLoadEnabled')) {
-              const fastLoadOverrides = FastLoad.getConfigOverrides();
-              for (const [key, value] of Object.entries(fastLoadOverrides)) {
-                data[key] = value;
-              }
-              log.info('Applied FastLoad config overrides');
-            }
-
-            // Then apply user overrides (can override FastLoad settings)
             const overrides = config.get(configKey) || {};
             let changed = false;
             for (const [key, value] of Object.entries(overrides)) {
@@ -11824,18 +12210,22 @@
 
             if (changed) {
               log.info(`Applied user overrides to ${type}`);
+            } else {
+              return response;
             }
 
+            const headers = new Headers(response.headers);
+            headers.delete('content-encoding');
+            headers.delete('content-length');
             const modifiedResponse = new Response(JSON.stringify(data), {
               status: response.status,
               statusText: response.statusText,
-              headers: response.headers
+              headers
             });
-
-            // Proxy the response to ensure .json() works if called again
             return modifiedResponse;
           } catch (err) {
             log.error(`Failed to hijack ${type}:`, err);
+            return response;
           }
         }
         return originalFetch(...args);
@@ -11850,6 +12240,7 @@
 
       const originalSend = win.XMLHttpRequest.prototype.send;
       win.XMLHttpRequest.prototype.send = function () {
+        if (!config.get('rendererConfigHijackEnabled')) return originalSend.apply(this, arguments);
         const url = this._url;
         const isRenderer = url && typeof url === 'string' && url.includes('renderer-config.json');
         const isUI = url && typeof url === 'string' && url.includes('ui-config.json');
@@ -11866,16 +12257,6 @@
               try {
                 const data = JSON.parse(this.responseText);
 
-                // Apply FastLoad overrides first (if enabled and this is renderer-config)
-                if (isRenderer && config.get('fastLoadEnabled')) {
-                  const fastLoadOverrides = FastLoad.getConfigOverrides();
-                  for (const [key, value] of Object.entries(fastLoadOverrides)) {
-                    data[key] = value;
-                  }
-                  log.info('Applied FastLoad config overrides (XHR)');
-                }
-
-                // Then apply user overrides
                 const overrides = config.get(configKey) || {};
                 let changed = false;
                 for (const [key, value] of Object.entries(overrides)) {
@@ -11886,8 +12267,7 @@
                   log.info(`Applied user overrides to ${type} (XHR)`);
                 }
 
-                // Always update if FastLoad is enabled or user overrides exist
-                if ((isRenderer && config.get('fastLoadEnabled')) || changed) {
+                if (changed) {
                   // Use Object.defineProperty to override read-only properties
                   Object.defineProperty(this, 'responseText', { value: JSON.stringify(data), configurable: true });
                   Object.defineProperty(this, 'response', { value: JSON.stringify(data), configurable: true });
@@ -11939,14 +12319,16 @@
     },
 
     setupObserver(container) {
+      this.observer?.disconnect();
       this.observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.type === 'childList') {
             mutation.addedNodes.forEach((node) => {
               if (node.nodeType === Node.ELEMENT_NODE) {
-                // Check for event invite popup (nitro-alert-hotel.event)
-                const eventAlert = node.querySelector?.('.nitro-alert-hotel\\.event') ||
-                  (node.classList?.contains('nitro-alert-hotel.event') ? node : null);
+                // Nitro expresses this as two classes: nitro-alert-hotel + event.
+                const eventAlert = node.matches?.('.nitro-alert-hotel.event')
+                  ? node
+                  : node.querySelector?.('.nitro-alert-hotel.event');
 
                 if (eventAlert) {
                   this.handleEventInvite(node, eventAlert);
@@ -12094,6 +12476,7 @@
     isOpen: false,
     lastPosition: null,
     button: null,
+    _buttonRetry: null,
 
     async init() {
       log.debug('Browser.init()');
@@ -12120,12 +12503,22 @@
     },
 
     addButton() {
+      if (!config.get('browserEnabled')) return;
       // Use DOM helper to find existing config button container
       const configContainer = DOM.querySelector('#kuplafix-config-btn-container');
       if (!configContainer) {
         log.debug('Browser: config container not found, retrying...');
-        setTimeout(() => this.addButton(), 500);
+        if (!this._buttonRetry) {
+          this._buttonRetry = setTimeout(() => {
+            this._buttonRetry = null;
+            this.addButton();
+          }, 500);
+        }
         return;
+      }
+      if (this._buttonRetry) {
+        clearTimeout(this._buttonRetry);
+        this._buttonRetry = null;
       }
 
       if (this.button && this.button.isConnected) return;
@@ -12183,6 +12576,10 @@
     },
 
     removeButton() {
+      if (this._buttonRetry) {
+        clearTimeout(this._buttonRetry);
+        this._buttonRetry = null;
+      }
       const wrapper = DOM.querySelector('#kuplafix-browser-btn-container');
       if (wrapper) {
         wrapper.remove();
@@ -12509,6 +12906,7 @@
   // Module: Login welcome summary
   const LoginWelcome = {
     STORAGE_KEY: 'kuplafix_welcome_state_v1',
+    VISIT_CONTINUATION_MS: 60 * 60 * 1000,
     DEFAULT_STAFF_USERNAMES: Object.freeze(['Laatikko', 'Nappi', 'craimsson']),
     ROOM_TINTS: Object.freeze([
       ['rgba(35,82,103,.42)', 'rgba(92,168,199,.58)', '#79c5e2'],
@@ -12519,6 +12917,7 @@
       ['rgba(39,91,91,.42)', 'rgba(83,174,174,.58)', '#73cece'],
       ['rgba(99,51,84,.42)', 'rgba(187,102,155,.58)', '#dc8fbd']
     ]),
+    _roomTintAssignments: new Map(),
     account: null,
     previous: null,
     friends: new Map(),
@@ -12529,8 +12928,10 @@
     requestPendingUntil: 0,
     lastRawUserson: '',
     sessionStartedAt: Date.now(),
+    lastSavedAt: NaN,
     _initialized: false,
     _autoOpened: false,
+    _autoPresented: false,
     _usersOnObserver: null,
     _navigatorObserver: null,
     _navigatorDoc: null,
@@ -12576,7 +12977,10 @@
         const username = r.string();
         if (!id || !username) return;
         this.account = { id, username };
-        this.previous = this.loadAccountState();
+        const visitPair = this.resolveVisitPair(this.loadAccountState(), this.sessionStartedAt);
+        this.sessionStartedAt = visitPair.currentStartedAt;
+        this.lastSavedAt = visitPair.lastSavedAt;
+        this.previous = visitPair.previous;
         this.refreshCard();
       } catch (error) {
         log.warn('Welcome summary: could not parse user data', error);
@@ -12637,9 +13041,8 @@
       if (!config.get('welcomeSummaryEnabled') || this._autoOpened) return;
       this._autoOpened = true;
       this.observeNavigatorAssets();
-      const lastSeenAt = Number(this.previous?.lastSeenAt);
       const minAwayMs = this.getMinAwayMinutes() * 60 * 1000;
-      if (Number.isFinite(lastSeenAt) && minAwayMs > 0 && Date.now() - lastSeenAt < minAwayMs) {
+      if (Number.isFinite(this.lastSavedAt) && minAwayMs > 0 && Date.now() - this.lastSavedAt < minAwayMs) {
         log.debug('Welcome summary skipped: previous visit is newer than the configured threshold');
         return;
       }
@@ -12871,6 +13274,61 @@
       return this.loadStore().accounts?.[String(this.account.id)] || null;
     },
 
+    visitRecord(snapshot) {
+      if (!snapshot || typeof snapshot !== 'object') return null;
+      const sessionStartedAt = Number(snapshot.sessionStartedAt);
+      if (!Number.isFinite(sessionStartedAt) || sessionStartedAt <= 0) return null;
+      const lastSeenAt = Number(snapshot.lastSeenAt);
+      return {
+        sessionStartedAt,
+        lastSeenAt: Number.isFinite(lastSeenAt) && lastSeenAt > 0 ? lastSeenAt : sessionStartedAt
+      };
+    },
+
+    legacyVisitPair(accountState) {
+      const records = [...(Array.isArray(accountState?.visitHistory) ? accountState.visitHistory : []), accountState]
+        .map((snapshot) => this.visitRecord(snapshot))
+        .filter(Boolean)
+        .sort((a, b) => a.sessionStartedAt - b.sessionStartedAt);
+      const groups = [];
+      records.forEach((record) => {
+        const group = groups[groups.length - 1];
+        if (!group || record.sessionStartedAt - group.lastSeenAt >= this.VISIT_CONTINUATION_MS) {
+          groups.push({ ...record });
+          return;
+        }
+        group.sessionStartedAt = Math.min(group.sessionStartedAt, record.sessionStartedAt);
+        group.lastSeenAt = Math.max(group.lastSeenAt, record.lastSeenAt);
+      });
+      return {
+        current: groups[groups.length - 1] || null,
+        previous: groups[groups.length - 2] || null
+      };
+    },
+
+    resolveVisitPair(accountState, loginStartedAt = this.sessionStartedAt) {
+      const loginAt = Number(loginStartedAt);
+      const explicitPrevious = this.visitRecord(accountState?.previousVisit);
+      const legacyPair = explicitPrevious ? null : this.legacyVisitPair(accountState);
+      const current = legacyPair?.current || this.visitRecord(accountState);
+      const storedLastSeenAt = Number(accountState?.lastSeenAt);
+      const gap = loginAt - storedLastSeenAt;
+      const continued = !!current && Number.isFinite(storedLastSeenAt) && gap >= 0 && gap < this.VISIT_CONTINUATION_MS;
+      const storedPrevious = explicitPrevious || legacyPair?.previous || null;
+
+      return {
+        currentStartedAt: continued ? current.sessionStartedAt : loginAt,
+        previous: continued ? storedPrevious : current || storedPrevious,
+        lastSavedAt: Number.isFinite(storedLastSeenAt) && storedLastSeenAt > 0 ? storedLastSeenAt : NaN,
+        continued
+      };
+    },
+
+    previousVisitAt() {
+      const timestamp = Number(this.previous?.sessionStartedAt);
+      return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : NaN;
+    },
+
     saveSnapshot() {
       if (!this.account) return;
       const store = this.loadStore();
@@ -12881,7 +13339,8 @@
         lastSeenAt: Date.now(),
         rooms: this.rooms,
         friends: this.currentFriendLocations(),
-        staff: this.staffOnline.map(user => ({ username: user.username, roomId: user.roomId, roomName: user.roomName }))
+        staff: this.staffOnline.map(user => ({ username: user.username, roomId: user.roomId, roomName: user.roomName })),
+        previousVisit: this.visitRecord(this.previous)
       };
       GM_setValue(this.STORAGE_KEY, store);
     },
@@ -12940,11 +13399,31 @@
       return row;
     },
 
+    validRoomId(roomId) {
+      return roomId !== null && roomId !== undefined && String(roomId).trim() !== '' && Number.isFinite(Number(roomId)) && Number(roomId) > 0;
+    },
+
+    resetRoomTints(roomIds = []) {
+      this._roomTintAssignments = new Map();
+      roomIds.forEach((roomId) => {
+        if (!this.validRoomId(roomId)) return;
+        const key = String(Number(roomId));
+        if (!this._roomTintAssignments.has(key)) this._roomTintAssignments.set(key, this._roomTintAssignments.size);
+      });
+    },
+
+    neutralRoomTint() {
+      return ['rgba(38,45,49,.72)', 'rgba(112,121,126,.58)', '#b9c1c5'];
+    },
+
     roomTint(roomId) {
-      if (!Number.isFinite(Number(roomId))) return ['rgba(52,63,69,.42)', 'rgba(111,130,139,.55)', '#9fb1b9'];
-      const roomIndex = this.rooms.findIndex(room => Number(room.id) === Number(roomId));
-      const tintIndex = roomIndex >= 0 ? roomIndex : Math.abs(Number(roomId));
-      return this.ROOM_TINTS[tintIndex % this.ROOM_TINTS.length];
+      if (!this.validRoomId(roomId)) return this.neutralRoomTint();
+      const key = String(Number(roomId));
+      if (!this._roomTintAssignments.has(key)) this._roomTintAssignments.set(key, this._roomTintAssignments.size);
+      const tintIndex = this._roomTintAssignments.get(key);
+      if (tintIndex < this.ROOM_TINTS.length) return this.ROOM_TINTS[tintIndex];
+      const hue = Math.round((tintIndex * 137.508 + 205) % 360);
+      return [`hsla(${hue},34%,34%,.42)`, `hsla(${hue},48%,62%,.58)`, `hsl(${hue},58%,72%)`];
     },
 
     applyRoomTint(element, roomId) {
@@ -12954,8 +13433,15 @@
       element.style.setProperty('--kf-room-accent', accent);
     },
 
+    applyNeutralRoomTint(element) {
+      const [background, border, accent] = this.neutralRoomTint();
+      element.style.setProperty('--kf-room-tint', background);
+      element.style.setProperty('--kf-room-border', border);
+      element.style.setProperty('--kf-room-accent', accent);
+    },
+
     setRoomHighlight(roomId, active) {
-      if (!this.card || !Number.isFinite(Number(roomId))) return;
+      if (!this.card || !this.validRoomId(roomId)) return;
       const room = [...this.card.querySelectorAll('.kuplafix-welcome-room[data-room-id]')]
         .find(element => Number(element.dataset.roomId) === Number(roomId));
       room?.classList.toggle('kuplafix-room-highlight', active);
@@ -13018,11 +13504,15 @@
       return button;
     },
 
-    makeFriendCard(doc, friend, previousRoom = '', current = true) {
-      const canEnterRoom = current && Number.isFinite(Number(friend.roomId));
+    makeFriendCard(doc, friend, current = true) {
+      const canEnterRoom = current && this.validRoomId(friend.roomId);
       const element = doc.createElement(canEnterRoom ? 'button' : 'div');
       element.className = 'kuplafix-welcome-friend';
-      this.applyRoomTint(element, friend.roomId);
+      if (canEnterRoom) this.applyRoomTint(element, friend.roomId);
+      else {
+        element.classList.add('kuplafix-welcome-friend-no-room');
+        this.applyNeutralRoomTint(element);
+      }
       if (canEnterRoom) {
         element.title = `Siirry huoneeseen ${friend.roomName}`;
         element.addEventListener('click', () => this.enterRoom(friend.roomId));
@@ -13035,16 +13525,13 @@
       else avatar.dataset.fallback = friend.username.trim().charAt(0).toLocaleUpperCase('fi') || '?';
       const copy = doc.createElement('span'); copy.className = 'kuplafix-welcome-friend-copy';
       const name = doc.createElement('span'); name.className = 'kuplafix-welcome-friend-name'; name.textContent = friend.username;
-      const room = doc.createElement('span'); room.className = 'kuplafix-welcome-friend-room'; room.textContent = current ? friend.roomName : `Viimeksi: ${friend.roomName}`;
+      const room = doc.createElement('span'); room.className = 'kuplafix-welcome-friend-room'; room.textContent = canEnterRoom ? friend.roomName : 'Ei huoneessa';
       copy.append(name, room);
-      if (current && previousRoom && previousRoom !== friend.roomName) {
-        const last = doc.createElement('span'); last.className = 'kuplafix-welcome-friend-last'; last.textContent = `Viime käynnillä: ${previousRoom}`; copy.appendChild(last);
-      }
       element.append(avatar, copy);
       return element;
     },
 
-    makeFriendGroupsSection(doc, friends, previousFriendRooms) {
+    makeFriendGroupsSection(doc, friends) {
       const section = doc.createElement('section');
       section.className = 'kuplafix-welcome-section kuplafix-welcome-friends-section';
       const heading = doc.createElement('h3'); heading.textContent = `Kaverit paikalla${friends.length ? ` · ${friends.length}` : ''}`; section.appendChild(heading);
@@ -13055,33 +13542,57 @@
       }
       const byRoom = new Map();
       friends.forEach((friend) => {
-        const key = Number.isFinite(Number(friend.roomId)) ? `room:${friend.roomId}` : 'no-room';
+        const hasRoom = this.validRoomId(friend.roomId);
+        const key = hasRoom ? `room:${Number(friend.roomId)}` : `no-room:${friend.id ?? friend.username.toLocaleLowerCase('fi')}`;
         const group = byRoom.get(key) || { roomName: friend.roomName || 'Ei huoneessa', friends: [] };
         group.friends.push(friend); byRoom.set(key, group);
       });
       const renderedCards = [];
+      let slotCursor = 0;
+      const packedSlots = [];
+      const fullRows = Math.floor(friends.length / 3);
+      const remainder = friends.length % 3;
+      // Traverse every occupied cell as one continuous path. When the final row
+      // is partial, orient the full-row snake so it reaches column zero before
+      // entering that row. Consecutive room groups therefore stay connected,
+      // while the visual grid remains compact and left-aligned.
+      const firstRowLeftToRight = remainder === 0 || fullRows % 2 === 0;
+      for (let row = 0; row < fullRows; row++) {
+        const leftToRight = row % 2 === 0 ? firstRowLeftToRight : !firstRowLeftToRight;
+        const columns = leftToRight ? [0, 1, 2] : [2, 1, 0];
+        columns.forEach((column) => packedSlots.push({ row, column }));
+      }
+      for (let column = 0; column < remainder; column++) packedSlots.push({ row: fullRows, column });
       [...byRoom.entries()].sort(([, a], [, b]) => b.friends.length - a.friends.length || a.roomName.localeCompare(b.roomName, 'fi')).forEach(([groupKey, group]) => {
-        const blob = doc.createElement('div'); blob.className = 'kuplafix-welcome-friend-room-blob';
-        const groupRoomId = group.friends[0]?.roomId;
-        this.applyRoomTint(blob, groupRoomId);
-        const list = doc.createElement('div'); list.className = 'kuplafix-welcome-friend-list';
         const cards = group.friends.sort((a, b) => a.username.localeCompare(b.username, 'fi')).map((friend) =>
-          this.makeFriendCard(doc, friend, previousFriendRooms.get(friend.username.toLocaleLowerCase('fi')) || '', true));
-        cards.forEach((card) => {
-          list.appendChild(card);
-          renderedCards.push({ card, groupKey });
+          this.makeFriendCard(doc, friend, true));
+        const slots = packedSlots.slice(slotCursor, slotCursor + cards.length)
+          .sort((a, b) => a.row - b.row || a.column - b.column);
+        cards.forEach((card, index) => {
+          const slot = slots[index];
+          card.dataset.blobGroup = groupKey;
+          card.dataset.gridRow = String(slot.row);
+          card.dataset.gridColumn = String(slot.column);
+          card.style.gridRow = String(slot.row + 1);
+          card.style.gridColumn = String(slot.column + 1);
+          groups.appendChild(card);
+          renderedCards.push({ card, groupKey, ...slot });
         });
-        blob.appendChild(list); groups.appendChild(blob);
+        slotCursor += cards.length;
       });
-      renderedCards.forEach(({ card, groupKey }, index) => {
-        const column = index % 3;
-        const sameGroupAt = (candidateIndex) => renderedCards[candidateIndex]?.groupKey === groupKey;
-        const hasDifferentAbove = index >= 3 && renderedCards[index - 3]?.groupKey !== groupKey;
-        const hasDifferentLeft = column > 0 && renderedCards[index - 1]?.groupKey !== groupKey;
-        const hasAbove = index >= 3 && sameGroupAt(index - 3);
-        const hasBelow = sameGroupAt(index + 3);
-        const hasLeft = column > 0 && sameGroupAt(index - 1);
-        const hasRight = column < 2 && sameGroupAt(index + 1);
+      const cardsByPosition = new Map(renderedCards.map((entry) => [`${entry.row}:${entry.column}`, entry]));
+      renderedCards.forEach(({ card, groupKey, row, column }) => {
+        const at = (targetRow, targetColumn) => cardsByPosition.get(`${targetRow}:${targetColumn}`);
+        const above = row > 0 ? at(row - 1, column) : null;
+        const below = at(row + 1, column);
+        const left = column > 0 ? at(row, column - 1) : null;
+        const right = column < 2 ? at(row, column + 1) : null;
+        const hasDifferentAbove = above && above.groupKey !== groupKey;
+        const hasDifferentLeft = left && left.groupKey !== groupKey;
+        const hasAbove = above?.groupKey === groupKey;
+        const hasBelow = below?.groupKey === groupKey;
+        const hasLeft = left?.groupKey === groupKey;
+        const hasRight = right?.groupKey === groupKey;
         if (hasDifferentAbove) card.classList.add('kf-blob-gap-top');
         if (hasDifferentLeft) card.classList.add('kf-blob-gap-left');
         if (!hasAbove) card.classList.add('kf-edge-top');
@@ -13098,6 +13609,7 @@
 
     open(force = false) {
       if (!force && !config.get('welcomeSummaryEnabled')) return;
+      if (!force && this._autoPresented) return;
       const doc = this.targetDoc();
       if (!doc?.body) return;
       if (this.card?.ownerDocument !== doc) this.card = null;
@@ -13116,6 +13628,7 @@
         doc.body.appendChild(this.card);
       }
       this.card.hidden = false;
+      if (!force) this._autoPresented = true;
       this.refreshCard();
     },
 
@@ -13162,11 +13675,12 @@
       const brand = doc.createElement('div'); brand.className = 'kuplafix-welcome-brand'; brand.textContent = 'kuplaFix · yhteenveto';
       const title = doc.createElement('h2'); title.className = 'kuplafix-welcome-title'; title.textContent = `Tervetuloa${this.account?.username ? ` takaisin, ${this.account.username}` : ''}`;
       const visit = doc.createElement('div'); visit.className = 'kuplafix-welcome-visit';
-      visit.textContent = this.previous?.lastSeenAt
-        ? `Viimeinen tallennettu käyntisi: ${this.formatVisit(this.previous.lastSeenAt)}`
+      const previousVisitAt = this.previousVisitAt();
+      visit.textContent = Number.isFinite(previousVisitAt)
+        ? `Viimeinen tallennettu käyntisi: ${this.formatVisit(previousVisitAt)}`
         : this.formatVisit(null);
-      if (this.previous?.lastSeenAt) {
-        try { visit.title = new Intl.DateTimeFormat('fi-FI', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(this.previous.lastSeenAt)); }
+      if (Number.isFinite(previousVisitAt)) {
+        try { visit.title = new Intl.DateTimeFormat('fi-FI', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(previousVisitAt)); }
         catch (_) { /* relative label remains useful */ }
       }
       headingWrap.append(brand, title, visit);
@@ -13178,18 +13692,27 @@
       const currentFriends = this.currentFriendLocations();
       const friendsByRoom = new Map();
       currentFriends.forEach((friend) => {
-        if (!Number.isFinite(Number(friend.roomId))) return;
-        const list = friendsByRoom.get(friend.roomId) || [];
-        list.push(friend); friendsByRoom.set(friend.roomId, list);
+        if (!this.validRoomId(friend.roomId)) return;
+        const roomId = Number(friend.roomId);
+        const list = friendsByRoom.get(roomId) || [];
+        list.push(friend); friendsByRoom.set(roomId, list);
       });
+      const tintRoomIds = [];
+      this.rooms.forEach((room) => {
+        const roomId = Number(room.id);
+        if (friendsByRoom.has(roomId)) tintRoomIds.push(roomId);
+      });
+      currentFriends.forEach((friend) => {
+        if (this.validRoomId(friend.roomId)) tintRoomIds.push(Number(friend.roomId));
+      });
+      this.resetRoomTints(tintRoomIds);
       this.collectNavigatorAssets();
-      const roomRows = this.rooms.slice(0, 6).map(room => this.makeRoomCard(doc, room, friendsByRoom.get(room.id) || []));
+      const roomRows = this.rooms.slice(0, 6).map(room => this.makeRoomCard(doc, room, friendsByRoom.get(Number(room.id)) || []));
       const roomSection = this.makeSection(doc, 'Huoneissa nyt', roomRows, this.requestPendingUntil ? 'Haetaan huonetietoja…' : 'Huonetietoja ei saatu.', 'kuplafix-welcome-room-list');
       roomSection.classList.add('kuplafix-welcome-rooms-section');
       grid.appendChild(roomSection);
 
-      const previousFriendRooms = new Map((this.previous?.friends || []).map(friend => [friend.username.toLocaleLowerCase('fi'), friend.roomName]));
-      grid.appendChild(this.makeFriendGroupsSection(doc, currentFriends, previousFriendRooms));
+      grid.appendChild(this.makeFriendGroupsSection(doc, currentFriends));
 
       const staffRows = this.staffOnline.map(staff => this.makeRow(doc, staff.username, staff.roomName, () => this.enterRoom(staff.roomId)));
       if (staffRows.length) {
@@ -13236,7 +13759,7 @@
 
     showPreview() {
       if (!this.account) this.account = { id: -1, username: 'Kuplailija' };
-      this.previous ||= { lastSeenAt: Date.now() - 86400000, friends: [{ username: 'Esimerkki', roomName: 'Kahvila', roomId: 101 }] };
+      this.previous ||= { sessionStartedAt: Date.now() - 86400000, lastSeenAt: Date.now() - 82800000 };
       this.rooms = [{ id: 101, name: 'Kahvila', count: 12 }, { id: 202, name: 'Puisto', count: 7 }];
       this.staffOnline = [{ username: this.getStaffUsernames()[0], roomName: 'Aula', roomId: 303 }];
       this.open(true);
@@ -13288,8 +13811,7 @@
   config.load();
 
   // Immediate hijacking for renderer-config (must be before client loads)
-  // Also init if fastLoadEnabled is true (for config overrides)
-  if (config.get('rendererConfigHijackEnabled') || config.get('fastLoadEnabled')) {
+  if (config.get('rendererConfigHijackEnabled')) {
     ConfigHijacker.init();
   }
 
@@ -13335,7 +13857,6 @@
       packets: PacketManager,
       browser: Browser,
       builder: PacketBuilder,
-      fastLoad: FastLoad,
       // Test helpers for update checker
       testUpdateNotification: (version) => {
         try {

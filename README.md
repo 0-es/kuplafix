@@ -31,7 +31,7 @@ KuplaFix-painike ilmestyy Nitro-clientin sivupalkkiin tai työkaluriviin. Avaa s
 
 ## Ominaisuudet
 
-- kirjautumisen yhteenvetokortti: viime käynti, aktiiviset huoneet, kavereiden nykyinen ja aiempi sijainti, edellisen session viestit ja paikalla oleva henkilökunta
+- kirjautumisen yhteenvetokortti: viime käynti, aktiiviset huoneet, kavereiden nykyinen sijainti, edellisen session viestit ja paikalla oleva henkilökunta
 - paikalla olevien hahmojen määrä chat-kentässä
 - GIF-estot
 - huoneen kirkkaus- ja yövalosäädöt
@@ -41,10 +41,43 @@ KuplaFix-painike ilmestyy Nitro-clientin sivupalkkiin tai työkaluriviin. Avaa s
 - Game mode: WASD-ohjaus tai WASD-pikaviestit, muut yhden merkin pikaviestit sekä väliaikainen UI- ja näppäinkytkin
 - ääniviestit
 - LiveKit- ja etusivupainikkeet
-- FastLoad- ja renderer-config-asetukset
-- pakettien loki, pakettirakentaja ja makrot
+- renderer- ja UI-config-asetukset
+- pakettien loki, pakettirakentaja, otsakekohtaiset esto-/muokkaussuodattimet ja makrot
 
 Pakettityökalut voivat tarkkailla, muokata ja lähettää peliclientin WebSocket-paketteja. Käytä niitä omalla vastuulla ja Kuplahotellin sääntöjen mukaisesti.
+
+## v2.2.1
+
+### Packet Builder
+
+- lisää pysyvän **Filters**-välilehden: sisään- ja ulosmenevän paketin voi estää otsakkeen perusteella tai rakentaa uudelleen korvaamalla valitut parserin tunnistamat argumentit; muut live-paketin argumentit säilyvät ennallaan
+- tukee numero- ja nimiotsakkeita, suodatinten päälle/pois-kytkentää, osumamäärää sekä uusimman vastaavan Builder-paketin käyttämistä muokkauspohjana
+- tallentaa pakettilokin asetuksen oikein ja indeksoi aktiiviset suodattimet, makrot sekä otsakenimet, jolloin jokainen paketti ei enää käy läpi kaikkia sääntöjä
+
+### Kirjautumisen yhteenveto
+
+- korjaa useiden kaverihuoneblobbien asettelun: kortit pakataan yhteen kolmen sarakkeen ruudukkoon ilman tyhjiä paikkoja, saman huoneen ryhmä pysyy yhtenäisenä rivinvaihdoissa ja 5 px ryhmäväli piirretään kortin sisään muuttamatta korttien kokoa
+- antaa jokaiselle näkyvälle huoneryhmälle oman värin myös valmiin väripaletin täytyttyä; ilman nykyistä huonetta olevat kaverit ovat aina erillisiä neutraalin harmaita kortteja
+- säilyttää vain nykyisen ja edellisen loogisen käynnin: alle tunnin sisällä tapahtuva uudelleenlataus tai yhteyden palautuminen jatkaa nykyistä käyntiä eikä korvaa edellisen käynnin aikaleimaa
+- näyttää yhteenvedon automaattisesti enintään kerran yhden clienttilatauksen aikana
+- poistaa kaverikorteista vanhan “viimeksi huoneessa” -tiedon; nykyisessä huoneessa olevan kaverin koko kortti korostaa vastaavan huonekortin ja vie klikattaessa huoneeseen
+- korjaa huonekortin muodon `1 hahmo` / `n hahmoa` ja kupla-animaation: kuplien määrä seuraa käyttäjämäärää, aloitukset porrastuvat ilman näkyvää silmukan nollausta ja vähennetyn liikkeen selainasetus poistaa animaation
+- korjaa edellisen session otteen suodatuksen niin, etteivät system-, bot- tai WIRED-viestit näy yhteenvetokortissa
+
+### Korjaukset ja suorituskyky
+
+- sieppaa Nitro/Reactin vaihtaman keskusteluhistoriapainikkeen dokumentin capture-vaiheessa, joten KuplaFixin historia avautuu ilman DOM-observeria, watchdog-ajastinta tai uudelleensidonnan viivettä; ominaisuuden ollessa pois käytöstä Nitron oma historia toimii normaalisti
+- poistaa FastLoadin ja sen asetuksen kokonaan: tallennetuissa Chrome-suorituskykyjäljissä yhteysvihjeet ja ennakkolataus eivät nopeuttaneet WebSocket-yhteyden muodostusta
+- tekee renderer/UI-config-pyynnön vain kerran, palauttaa alkuperäisen vastauksen ilman turhaa uudelleenrakennusta silloin kun ohituksia ei ole ja jättää koukun kokonaan asentamatta ominaisuuden ollessa pois käytöstä
+- käynnistää GIF- ja huonevalaistus-observerit vain ominaisuuden ollessa käytössä, irrottaa ne poiskytkennässä ja rajaa ääniviestien tarkistuksen vain uusiin DOM-alipuihin
+- jättää hahmomäärän verkkopyynnöt väliin taustavälilehdessä, yhdistää päällekkäiset Nitro-iframe- ja UI-painikkeiden uusintayritykset sekä lopettaa poistettujen iframe-dokumenttien seurannan
+- korjaa GIF-asetuspaneelin oikeat tilat, asetusavaimet ja käyttäjänimien HTML-escapoinnin sekä tapahtumakutsun kaksiosaisen `.nitro-alert-hotel.event`-luokkavalitsimen
+- päivittää userscript-metadatan version, kuvauksen ja tekijän sekä asennussivun version ja bookmarkletin välimuistiavaimen versioon 2.2.1
+
+### Dokumentaatio ja testit
+
+- lisää ominaisuuspohjaisen HTML-kartan KuplaFixin modeista, automaattisista korjauksista, asetuksista, verkkokutsuista, tallennuksesta ja DOM/WebSocket-kosketuspinnoista
+- lisää 26 kohdan selaimen smoke-testin, joka kattaa config-ohitukset, chat-historian kaappauksen, pakettisuodattimet ja -indeksit, kaveriblobien geometrian, huonevärien erottelun, käyntiaikaleimat sekä tapahtumakutsun valitsimen
 
 ## v2.2.0
 
@@ -84,5 +117,8 @@ ScriptCat seuraa tämän repositorion raw `kuplafix.user.js` -tiedostoa automaat
 
 ## Lisätietoa
 
+- KuplaFixin koko vaikutuspinta ja optimointien auditointi: [docs/KUPLAFIX_TOUCH_MAP.html](docs/KUPLAFIX_TOUCH_MAP.html)
+- Hyllytetyn multi-room-idean tekninen selvitys ja rajoitteet: [docs/MULTI_ROOM_SPLIT_VIEW_DISCOVERY.md](docs/MULTI_ROOM_SPLIT_VIEW_DISCOVERY.md)
 - Bookmarkletin tekninen käynnistysjakso: [docs/BOOKMARKLET_LIFECYCLE.md](docs/BOOKMARKLET_LIFECYCLE.md)
 - Repositoriojulkasun ohje: [docs/RELEASE.md](docs/RELEASE.md)
+- Selaimen regressiotarkistukset: [tests/browser-smoke.html](tests/browser-smoke.html)
